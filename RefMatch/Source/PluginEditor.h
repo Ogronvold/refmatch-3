@@ -39,7 +39,8 @@ private:
     juce::TextButton play{"PLAY"},toneButton{"TONE EQ"},toneReset{"RESET TONE"};
     juce::TextButton recordMix{"RECORD MIX"},recordRef{"RECORD REF"},match{"MATCH"},reset{"RESET"};
     juce::TextButton lowType{"SHELF"},highType{"SHELF"};
-    juce::ToggleButton eqOn{"EQ ON"},toneOn{"TONE ON"},quickLoop{"LOOP"},beforeAfter{"AFTER"};
+    juce::ToggleButton eqOn{"EQ ON"},toneOn{"TONE ON"},quickLoop{"LOOP"};
+    juce::TextButton matchState{"MATCH ON"};
     juce::ComboBox graphRange;
     float graphScale=24.f;
     juce::Slider gain,amount,smooth,midQ;
@@ -47,11 +48,10 @@ private:
     std::array<std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>,6> toneAttachments;
     juce::TextEditor inTime,outTime;
     juce::TextButton back{"-5 s"},forward{"+5 s"},setIn{"SET IN"},setOut{"SET OUT"};
-    juce::ToggleButton loopOn{"LOOP"};
     LoopTimeline timeline;
     juce::Label status,mixProfile,refProfile,position;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> gainAttach,amountAttach,smoothAttach,midQAttach;
-    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> eqAttach,toneOnAttach,beforeAfterAttach,lowShelfAttach,highShelfAttach;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> eqAttach,toneOnAttach,lowShelfAttach,highShelfAttach;
     juce::TooltipWindow tips{this,650};
     juce::String message;
     int page=1;

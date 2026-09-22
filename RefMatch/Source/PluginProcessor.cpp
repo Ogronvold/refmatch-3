@@ -360,6 +360,7 @@ void RefMatchAudioProcessor::clearMatch()
 }
 
 std::vector<float> RefMatchAudioProcessor::getMatchCurveDb() const { return matchEQ.getCurveDb(); }
+std::vector<float> RefMatchAudioProcessor::getMatchCurveDbAtAmount(float amount) const { return matchEQ.getCurveDb(amount); }
 std::array<float, SpectrumAnalyser::bins> RefMatchAudioProcessor::getSourceSpectrum() const { auto values=sourceAnalyser.getAveragedMagnitudes();if(juce::Time::getMillisecondCounterHiRes()-lastAudioCallbackMs.load()>200)values.fill(-100.f);return values; }
 std::array<float, SpectrumAnalyser::bins> RefMatchAudioProcessor::getReferenceSpectrum() const { auto values=referenceAnalysis.analyser.getAveragedMagnitudes();if(!referenceAnalysis.present.load())values.fill(-100.f);return values; }
 std::array<float, SpectrumAnalyser::bins> RefMatchAudioProcessor::getBeforeEffectSpectrum() const { auto values=beforeEffectAnalyser.getAveragedMagnitudes();if(juce::Time::getMillisecondCounterHiRes()-lastAudioCallbackMs.load()>200)values.fill(-100.f);return values; }

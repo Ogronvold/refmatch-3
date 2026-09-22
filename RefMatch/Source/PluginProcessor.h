@@ -68,6 +68,7 @@ public:
     std::vector<float> getToneCurveDb() const { return matchEQ.getCurveDb(0.f); }
     std::vector<float> getFullMatchCurveDb() const { return matchEQ.getCurveDb(1.f); }
     std::vector<float> getMatchCurveDb() const;
+    std::vector<float> getMatchCurveDbAtAmount(float amount) const;
 
     std::array<float, SpectrumAnalyser::bins> getSourceSpectrum() const;
     std::array<float, SpectrumAnalyser::bins> getReferenceSpectrum() const;

@@ -1,6 +1,6 @@
-# RefMatch 0.5.10 — UI cleanup
+# RefMatch 0.5.11 — UI cleanup
 
-## 0.5.10 changes
+## 0.5.11 changes
 
 - Groups the persistent loop ON/OFF control and ACTIVE/WAITING status beside the LOOP tab.
 - Renames the A-side comparison control to BYPASS MATCH; bypass keeps A gain while Match EQ and Tone EQ are bypassed.
@@ -87,3 +87,9 @@ Metadata, position and artwork depend on macOS. Seeking happens on mouse release
 the time ruler is not an audio waveform or sample-accurate DAW scrubber.
 EQ matches broad spectral balance, not instruments, dynamics or identical audio.
 MIX measurement cannot invent audio when Logic sends none. REF requires capture permission.
+## 0.5.11 UI/DSP cleanup
+- Match Amount now scales the fully limited correction from 0-100%, avoiding the early visual/audio plateau caused by Max Correction.
+- Applied EQ graph shows a dim 100% target plus the bright currently-applied curve.
+- LOW/HIGH Tone EQ Shelf/Bell buttons are actual toggles and the Tone layout has more spacing.
+- Removed the duplicate Loop enable switch from the Loop page; the quick toggle beside the Loop tab is the single loop on/off control.
+- Replaced the ambiguous Before/After checkbox with an explicit MATCH ON / BYPASSED state button; A gain stays active while matching is bypassed.

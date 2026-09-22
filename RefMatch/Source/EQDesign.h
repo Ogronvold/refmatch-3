@@ -74,14 +74,18 @@ inline Gains fit(const Gains& mix,const Gains& ref,double sr,double smoothing)
 }
 inline Gains scaled(Gains gains,double amount,double limit,double sr)
 {
-    for(auto& g:gains)g*=std::clamp(amount,0.,1.);
+    // First constrain the learned 100% curve to Max Correction, then use Amount
+    // as a true 0-100% wet scaling of that complete correction. This prevents
+    // Amount from visually/audibly plateauing as soon as the limit is reached.
     double maximum=0;
     for(int i=0;i<160;++i) {
         const double hz=20*std::pow(std::min(20000.,sr*.45)/20.,i/159.);
         double db=0;for(int b=0;b<bands;++b)db+=response(peak(sr,centre(b),gains[b]),hz,sr);
         maximum=std::max(maximum,std::abs(db));
     }
-    if(maximum>limit)for(auto& g:gains)g*=limit/maximum;
+    if(maximum>limit && maximum>0.0)for(auto& g:gains)g*=limit/maximum;
+    const double wet=std::clamp(amount,0.,1.);
+    for(auto& g:gains)g*=wet;
     return gains;
 }
 }
