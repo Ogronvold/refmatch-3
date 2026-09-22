@@ -38,6 +38,7 @@ private:
     RefMatchLookAndFeel look;
     juce::TextButton a{"A"},b{"B"},switchButton{"SWITCH"};
     juce::TextButton eqTab{"MATCH EQ"},loopTab{"LOOP"};
+    juce::TextButton clearLoop{"CLEAR"},zoomMinus{"-"},zoomPlus{"+"};
     juce::TextButton play{"PLAY"},toneButton{"TONE EQ"},toneReset{"RESET TONE"};
     juce::TextButton recordMix{"RECORD MIX"},recordRef{"RECORD REF"},match{"MATCH"},reset{"RESET"};
     juce::TextButton lowType{"SHELF"},highType{"SHELF"};
@@ -45,7 +46,7 @@ private:
     juce::TextButton matchState{"MATCH ON"};
     juce::ComboBox graphRange;
     float graphScale=24.f;
-    juce::Slider gain,amount,smooth,midQ;
+    juce::Slider gain,amount,smooth,midQ,loopZoom;
     std::array<juce::Slider,6> tone;
     std::array<std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>,6> toneAttachments;
     juce::TextEditor inTime,outTime;
@@ -58,5 +59,6 @@ private:
     juce::String message;
     int page=1;
     bool showTone=false;
+    double matchFlashUntil=0.0;
     enum class MatchDrag { none, low, high } matchDrag=MatchDrag::none;
 };
