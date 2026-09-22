@@ -1,6 +1,6 @@
-# RefMatch 0.5.13 — 200% Amount + coloured applied curve
+# RefMatch 0.5.14 — 200% Amount + coloured applied curve
 
-## 0.5.13 changes
+## 0.5.14 changes
 - Match Amount now runs from 0–200%. 100% remains the normal full learned match; 100–200% intentionally exaggerates it.
 - The applied EQ response is no longer a plain white line: near-zero correction stays almost white, then stronger correction moves through mint into cyan/blue.
 - The purple curve remains the fixed 100% target for orientation.
@@ -100,3 +100,12 @@ MIX measurement cannot invent audio when Logic sends none. REF requires capture 
 - LOW/HIGH Tone EQ Shelf/Bell buttons are actual toggles and the Tone layout has more spacing.
 - Removed the duplicate Loop enable switch from the Loop page; the quick toggle beside the Loop tab is the single loop on/off control.
 - Replaced the ambiguous Before/After checkbox with an explicit MATCH ON / BYPASSED state button; A gain stays active while matching is bypassed.
+
+
+## 0.5.14 visual polish
+- Darker, cleaner panel hierarchy with softer borders and inner highlights.
+- Subtle orange/purple bloom around selected source cards and active controls.
+- Cleaner button rendering and more restrained gradients.
+- Pill-style quick Loop and EQ toggles.
+- Softer graph/tone cards and slider glow.
+- DSP and matching behaviour unchanged from 0.5.13.

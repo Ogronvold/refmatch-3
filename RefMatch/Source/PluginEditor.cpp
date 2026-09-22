@@ -1,8 +1,32 @@
 #include "PluginEditor.h"
 namespace {
-const juce::Colour black(0xff090e16),panel(0xff111824),line(0xff2a3445),text(0xffeef1f7),muted(0xff808897),cyan(0xffffad42),violet(0xffb16af3);
+const juce::Colour black(0xff070b11), panel(0xff101722), panelRaised(0xff151d29), line(0xff283344),
+                   text(0xfff2f4f8), muted(0xff7f8999), cyan(0xffffad45), violet(0xffa85df5);
+
 void label(juce::Label& l,float size,juce::Colour colour=muted) {
     l.setFont(juce::Font(juce::FontOptions(size)));l.setColour(juce::Label::textColourId,colour);
+}
+
+void glowRounded(juce::Graphics& g, juce::Rectangle<float> r, float radius, juce::Colour colour, float strength=.16f)
+{
+    // Cheap bloom made from layered translucent shapes. It stays lightweight in
+    // JUCE while giving selected cards/controls a soft neon halo.
+    for(int i=5;i>=1;--i) {
+        const float spread=float(i)*2.2f;
+        g.setColour(colour.withAlpha(strength*(6.f-float(i))/32.f));
+        g.fillRoundedRectangle(r.expanded(spread),radius+spread);
+    }
+}
+
+void panelCard(juce::Graphics& g, juce::Rectangle<float> r, juce::Colour accent, bool selected=false)
+{
+    if(selected) glowRounded(g,r,12.f,accent,.22f);
+    g.setGradientFill(juce::ColourGradient(panelRaised.withAlpha(.96f),r.getTopLeft(),panel.darker(.18f),r.getBottomRight(),false));
+    g.fillRoundedRectangle(r,12.f);
+    g.setColour(juce::Colours::white.withAlpha(.025f));
+    g.drawRoundedRectangle(r.reduced(.75f),11.3f,1.f);
+    g.setColour(accent.withAlpha(selected?.82f:.30f));
+    g.drawRoundedRectangle(r,12.f,1.1f);
 }
 }
 RefMatchLookAndFeel::RefMatchLookAndFeel()
@@ -31,29 +55,64 @@ RefMatchLookAndFeel::RefMatchLookAndFeel()
 }
 void RefMatchLookAndFeel::drawButtonBackground(juce::Graphics& g,juce::Button& button,const juce::Colour& colour,bool over,bool down)
 {
-    auto r=button.getLocalBounds().toFloat().reduced(.5f);
-    const auto fill=colour.withMultipliedBrightness(down?.8f:over?1.2f:1.f);
-    if(bool(button.getProperties()["compactType"])) {
-        const auto accent=colour;
-        g.setColour(panel.brighter(over?.12f:.05f));g.fillRoundedRectangle(r,5);
-        g.setColour(accent.withAlpha(button.getToggleState()?.75f:.45f));g.drawRoundedRectangle(r,5,1);
+    auto r=button.getLocalBounds().toFloat().reduced(.75f);
+    const bool on=button.getToggleState();
+    const bool compact=bool(button.getProperties()["compactType"]);
+    const bool dual=bool(button.getProperties()["dualAccent"]);
+    const bool glow=bool(button.getProperties()["glow"]);
+
+    if(glow || on) glowRounded(g,r,compact?6.f:8.f,dual?violet:colour,compact?.12f:.15f);
+
+    if(compact) {
+        const auto fill=panelRaised.withMultipliedBrightness(down?.88f:over?1.10f:1.f);
+        g.setColour(fill);g.fillRoundedRectangle(r,6.f);
+        g.setColour((on?colour:line).withAlpha(on?.90f:.75f));g.drawRoundedRectangle(r,6.f,1.f);
         return;
     }
-    if(button.getToggleState() && bool(button.getProperties()["dualAccent"]))
+
+    if(on && dual)
         g.setGradientFill(juce::ColourGradient(cyan,r.getTopLeft(),violet,r.getTopRight(),false));
-    else g.setGradientFill(juce::ColourGradient(fill.brighter(.10f),r.getTopLeft(),fill.darker(.10f),r.getBottomLeft(),false));
-    g.fillRoundedRectangle(r,7);
-    g.setColour(button.getToggleState()?colour.withAlpha(.7f):line);g.drawRoundedRectangle(r,7,1);
+    else if(on)
+        g.setGradientFill(juce::ColourGradient(colour.brighter(.08f),r.getTopLeft(),colour.darker(.08f),r.getBottomRight(),false));
+    else {
+        const auto fill=panelRaised.withMultipliedBrightness(down?.88f:over?1.10f:1.f);
+        g.setGradientFill(juce::ColourGradient(fill.brighter(.04f),r.getTopLeft(),fill.darker(.08f),r.getBottomRight(),false));
+    }
+    g.fillRoundedRectangle(r,8.f);
+    g.setColour((on?colour:line).withAlpha(on?.86f:.82f));g.drawRoundedRectangle(r,8.f,1.f);
+    g.setColour(juce::Colours::white.withAlpha(over?.055f:.025f));g.drawRoundedRectangle(r.reduced(1.f),7.f,.8f);
 }
 void RefMatchLookAndFeel::drawLinearSlider(juce::Graphics& g,int x,int y,int width,int height,float position,float,float,juce::Slider::SliderStyle,juce::Slider& slider)
 {
     const float mid=y+height*.5f;
-    g.setColour(line);g.fillRoundedRectangle(float(x),mid-2,float(width),4,2);
+    g.setColour(line.darker(.08f));g.fillRoundedRectangle(float(x),mid-2,float(width),4,2);
     const auto accent=slider.findColour(juce::Slider::trackColourId);
+    g.setColour(juce::Colours::white.withAlpha(.025f));g.fillRoundedRectangle(float(x),mid-2,float(width),1.2f,1.f);
     g.setGradientFill(juce::ColourGradient(bool(slider.getProperties()["dualAccent"])?cyan:accent,float(x),mid,bool(slider.getProperties()["dualAccent"])?violet:accent,float(x+width),mid,false));
     g.fillRoundedRectangle(float(x),mid-2,std::max(0.f,position-x),4,2);
-    g.setColour(accent.withAlpha(.15f));g.fillEllipse(position-8,mid-8,16,16);
-    g.setColour(text);g.fillEllipse(position-5,mid-5,10,10);
+    g.setColour(accent.withAlpha(.12f));g.fillEllipse(position-11,mid-11,22,22);
+    g.setColour(accent.withAlpha(.18f));g.fillEllipse(position-8,mid-8,16,16);
+    g.setColour(text.withAlpha(.95f));g.fillEllipse(position-5.2f,mid-5.2f,10.4f,10.4f);
+}
+
+void RefMatchLookAndFeel::drawToggleButton(juce::Graphics& g,juce::ToggleButton& button,bool over,bool down)
+{
+    if(bool(button.getProperties()["pillToggle"])) {
+        auto r=button.getLocalBounds().toFloat();
+        const float h=18.f,w=36.f;
+        auto pill=juce::Rectangle<float>(r.getX()+2.f,r.getCentreY()-h*.5f,w,h);
+        const bool on=button.getToggleState();
+        const auto accent=button.findColour(juce::ToggleButton::tickColourId);
+        if(on) glowRounded(g,pill,9.f,accent,.18f);
+        g.setColour(on?accent.withAlpha(.28f):line.withAlpha(.8f));g.fillRoundedRectangle(pill,9.f);
+        g.setColour(on?accent.withAlpha(.80f):muted.withAlpha(.45f));g.drawRoundedRectangle(pill,9.f,1.f);
+        const float cx=on?pill.getRight()-9.f:pill.getX()+9.f;
+        g.setColour(on?text:muted);g.fillEllipse(cx-5.5f,pill.getCentreY()-5.5f,11.f,11.f);
+        g.setFont(juce::Font(juce::FontOptions(11.f,juce::Font::bold)));g.setColour(text.withAlpha(down?.7f:over?1.f:.92f));
+        g.drawText(button.getButtonText(),juce::Rectangle<float>(pill.getRight()+8.f,r.getY(),std::max(0.f,r.getWidth()-pill.getWidth()-10.f),r.getHeight()),juce::Justification::centredLeft);
+        return;
+    }
+    juce::LookAndFeel_V4::drawToggleButton(g,button,over,down);
 }
 RefMatchAudioProcessorEditor::RefMatchAudioProcessorEditor(RefMatchAudioProcessor& p):AudioProcessorEditor(&p),processor(p)
 {
@@ -105,6 +164,7 @@ RefMatchAudioProcessorEditor::RefMatchAudioProcessorEditor(RefMatchAudioProcesso
         toneAttachments[i]=std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(p.apvts,"tone"+juce::String(i/2)+(i%2?"freq":"gain"),tone[i]);
     }
     for(auto* button:{&b,&play,&recordRef})button->setColour(juce::TextButton::buttonOnColourId,violet);
+    for(auto* button:{&play,&recordMix,&recordRef,&match,&reset})button->getProperties().set("glow",true);
     lowShelfAttach=std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(p.apvts,"tone0shelf",lowType);
     highShelfAttach=std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(p.apvts,"tone2shelf",highType);
     for(auto* typeButton:{&lowType,&highType}) {
@@ -119,6 +179,7 @@ RefMatchAudioProcessorEditor::RefMatchAudioProcessorEditor(RefMatchAudioProcesso
     highType.setColour(juce::TextButton::buttonOnColourId,violet);
     matchState.setClickingTogglesState(true);
     matchState.getProperties().set("compactType",true);
+    matchState.getProperties().set("glow",true);
     matchState.setColour(juce::TextButton::buttonColourId,cyan);
     matchState.setColour(juce::TextButton::buttonOnColourId,violet);
     matchState.onClick=[this]{
@@ -130,8 +191,11 @@ RefMatchAudioProcessorEditor::RefMatchAudioProcessorEditor(RefMatchAudioProcesso
         }
     };
     matchState.setTooltip("MATCH ON = Match EQ + Tone EQ active. BYPASSED = those stages are bypassed while A gain remains active.");
+    quickLoop.getProperties().set("pillToggle",true);eqOn.getProperties().set("pillToggle",true);
+    quickLoop.setColour(juce::ToggleButton::tickColourId,violet);eqOn.setColour(juce::ToggleButton::tickColourId,violet);
     quickLoop.setTooltip("Toggle the most recently defined loop without opening the LOOP page.");
     eqTab.getProperties().set("dualAccent",true);loopTab.getProperties().set("dualAccent",true);
+    eqTab.getProperties().set("glow",true);loopTab.getProperties().set("glow",true);toneButton.getProperties().set("glow",true);
     toneOnAttach=std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(p.apvts,"toneenabled",toneOn);
     toneOn.setTooltip("Bypass only the three Tone bands. Keeps their settings and leaves Match EQ active.");
     graphRange.addItem("+/- 12 dB",12);graphRange.addItem("+/- 24 dB",24);graphRange.addItem("+/- 48 dB",48);graphRange.addItem("+/- 96 dB",96);
@@ -239,7 +303,11 @@ void RefMatchAudioProcessorEditor::timerCallback()
 }
 void RefMatchAudioProcessorEditor::drawSpectrum(juce::Graphics& g,juce::Rectangle<float> r,bool eq)
 {
-    g.setColour(panel);g.fillRoundedRectangle(r,9);auto plot=r.reduced(12,20);
+    if(eq) glowRounded(g,r,9.f,violet,.07f);
+    g.setGradientFill(juce::ColourGradient(panelRaised.withAlpha(.94f),r.getTopLeft(),panel.darker(.15f),r.getBottomRight(),false));
+    g.fillRoundedRectangle(r,9.f);
+    g.setColour(juce::Colours::white.withAlpha(.025f));g.drawRoundedRectangle(r.reduced(.7f),8.4f,1.f);
+    auto plot=r.reduced(12,20);
     g.setColour(line);
     for(int i=0;i<=4;++i){const float y=plot.getY()+plot.getHeight()*i/4;g.drawHorizontalLine(int(y),plot.getX(),plot.getRight());}
     for(double hz:{100.,1000.,10000.}) {const float x=plot.getX()+float(std::log(hz/20.)/std::log(1000.))*plot.getWidth();g.drawVerticalLine(int(x),plot.getY(),plot.getBottom());}
@@ -318,12 +386,16 @@ void RefMatchAudioProcessorEditor::drawSpectrum(juce::Graphics& g,juce::Rectangl
 void RefMatchAudioProcessorEditor::paint(juce::Graphics& g)
 {
     g.fillAll(black);
-    g.setGradientFill(juce::ColourGradient(juce::Colour(0xff172238),0,0,black,640,250,false));g.fillRect(getLocalBounds());g.setColour(text);g.setFont(juce::Font(juce::FontOptions(23,juce::Font::bold)));g.drawText("RefMatch",20,12,170,30,juce::Justification::left);
-    g.setFont(juce::Font(juce::FontOptions(10)));g.setColour(muted);g.drawText("0.5.13   /   STREAM",455,18,164,20,juce::Justification::right);
+    g.setGradientFill(juce::ColourGradient(juce::Colour(0xff121b2b),0,0,black,640,320,false));g.fillRect(getLocalBounds());
+    // Very soft ambient colour haze behind the two source cards. The opacity is
+    // deliberately low so it reads as bloom rather than a coloured background.
+    g.setColour(cyan.withAlpha(.022f));g.fillEllipse(-90.f,18.f,360.f,270.f);
+    g.setColour(violet.withAlpha(.022f));g.fillEllipse(395.f,18.f,340.f,270.f);
+    g.setColour(text);g.setFont(juce::Font(juce::FontOptions(23,juce::Font::bold)));g.drawText("RefMatch",20,12,170,30,juce::Justification::left);
+    g.setFont(juce::Font(juce::FontOptions(10)));g.setColour(muted);g.drawText("0.5.14   /   STREAM",455,18,164,20,juce::Justification::right);
     for(int side=0;side<2;++side) {
         const juce::Rectangle<float> r(side?370.f:20.f,60,250,114);
-        g.setGradientFill(juce::ColourGradient(panel.brighter(.12f),r.getTopLeft(),panel.darker(.12f),r.getBottomRight(),false));g.fillRoundedRectangle(r,12);
-        g.setColour((side?violet:cyan).withAlpha((side==int(processor.isReferenceSelected()))?.65f:.22f));g.drawRoundedRectangle(r,12,1);
+        panelCard(g,r,side?violet:cyan,side==int(processor.isReferenceSelected()));
     }
     g.setColour(muted);g.setFont(juce::Font(juce::FontOptions(10)));g.drawText("Match your sound.",21,41,180,14,juce::Justification::left);
     g.setColour(text);g.setFont(juce::Font(juce::FontOptions(13,juce::Font::bold)));g.drawText("YOUR MIX",87,75,76,20,juce::Justification::left);
@@ -384,7 +456,11 @@ void RefMatchAudioProcessorEditor::paint(juce::Graphics& g)
         drawSpectrum(g,{20,370,600,94},true);g.setColour(muted);g.drawText("Amount",22,476,55,24,juce::Justification::left);g.drawText("Smooth",326,476,54,24,juce::Justification::left);
         g.drawText("Fine",386,499,45,14,juce::Justification::left);g.drawText("Broad",563,499,54,14,juce::Justification::right);
         if(showTone)for(int i=0;i<3;++i) {
-            const int x=20+i*204;g.setColour(panel);g.fillRoundedRectangle(float(x),548,192,92,7);
+            const int x=20+i*204;
+            const juce::Rectangle<float> card(float(x),548,192,92);
+            g.setGradientFill(juce::ColourGradient(panelRaised.withAlpha(.94f),card.getTopLeft(),panel.darker(.12f),card.getBottomRight(),false));g.fillRoundedRectangle(card,8.f);
+            g.setColour(juce::Colours::white.withAlpha(.025f));g.drawRoundedRectangle(card.reduced(.7f),7.4f,1.f);
+            g.setColour(violet.withAlpha(.18f));g.drawRoundedRectangle(card,8.f,.8f);
             g.setColour(violet);g.drawText(i==0?"LOW":i==1?"MID":"HIGH",x+8,551,45,16,juce::Justification::left);
         }
         if(showTone){g.setColour(muted);g.setFont(juce::Font(juce::FontOptions(9)));g.drawText("30-300 Hz",28,624,80,14,juce::Justification::left);g.drawText("200 Hz-6 kHz",232,624,92,14,juce::Justification::left);g.drawText("3-20 kHz",436,624,80,14,juce::Justification::left);}
