@@ -33,6 +33,12 @@ void RefMatchLookAndFeel::drawButtonBackground(juce::Graphics& g,juce::Button& b
 {
     auto r=button.getLocalBounds().toFloat().reduced(.5f);
     const auto fill=colour.withMultipliedBrightness(down?.8f:over?1.2f:1.f);
+    if(bool(button.getProperties()["compactType"])) {
+        const auto accent=colour;
+        g.setColour(panel.brighter(over?.12f:.05f));g.fillRoundedRectangle(r,5);
+        g.setColour(accent.withAlpha(button.getToggleState()?.75f:.45f));g.drawRoundedRectangle(r,5,1);
+        return;
+    }
     if(button.getToggleState() && bool(button.getProperties()["dualAccent"]))
         g.setGradientFill(juce::ColourGradient(cyan,r.getTopLeft(),violet,r.getTopRight(),false));
     else g.setGradientFill(juce::ColourGradient(fill.brighter(.10f),r.getTopLeft(),fill.darker(.10f),r.getBottomLeft(),false));
@@ -101,8 +107,25 @@ RefMatchAudioProcessorEditor::RefMatchAudioProcessorEditor(RefMatchAudioProcesso
     for(auto* button:{&b,&play,&recordRef})button->setColour(juce::TextButton::buttonOnColourId,violet);
     lowShelfAttach=std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(p.apvts,"tone0shelf",lowType);
     highShelfAttach=std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(p.apvts,"tone2shelf",highType);
-    beforeAfterAttach=std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(p.apvts,"processingafter",beforeAfter);
-    beforeAfter.setTooltip("BEFORE keeps A gain but bypasses Match EQ and Tone EQ. AFTER enables the processing.");
+    for(auto* typeButton:{&lowType,&highType}) {
+        typeButton->getProperties().set("compactType",true);
+        typeButton->setColour(juce::TextButton::textColourOffId,text);
+        typeButton->setColour(juce::TextButton::textColourOnId,text);
+    }
+    lowType.setColour(juce::TextButton::buttonColourId,cyan);
+    lowType.setColour(juce::TextButton::buttonOnColourId,cyan);
+    highType.setColour(juce::TextButton::buttonColourId,violet);
+    highType.setColour(juce::TextButton::buttonOnColourId,violet);
+    beforeAfter.setButtonText("BYPASS MATCH");
+    beforeAfter.onClick=[this]{
+        if(auto* parameter=processor.apvts.getParameter("processingafter")) {
+            const bool bypass=beforeAfter.getToggleState();
+            parameter->beginChangeGesture();
+            parameter->setValueNotifyingHost(bypass?0.0f:1.0f);
+            parameter->endChangeGesture();
+        }
+    };
+    beforeAfter.setTooltip("Bypass Match EQ and Tone EQ while keeping the A gain adjustment active.");
     quickLoop.setTooltip("Toggle the most recently defined loop without opening the LOOP page.");
     eqTab.getProperties().set("dualAccent",true);loopTab.getProperties().set("dualAccent",true);
     toneOnAttach=std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(p.apvts,"toneenabled",toneOn);
@@ -197,7 +220,10 @@ void RefMatchAudioProcessorEditor::timerCallback()
     status.setText(info,juce::dontSendNotification);status.setTooltip(info);
     loopOn.setToggleState(processor.getLoop().isEnabled(),juce::dontSendNotification);
     quickLoop.setToggleState(processor.getLoop().isEnabled(),juce::dontSendNotification);
-    beforeAfter.setButtonText(beforeAfter.getToggleState()?"AFTER":"BEFORE");
+    quickLoop.setButtonText(processor.getLoop().isEnabled()?"ON":"OFF");
+    const bool processingAfter=processor.apvts.getRawParameterValue("processingafter")->load()>.5f;
+    beforeAfter.setToggleState(!processingAfter,juce::dontSendNotification);
+    beforeAfter.setButtonText("BYPASS MATCH");
     lowType.setButtonText(lowType.getToggleState()?"SHELF":"BELL");highType.setButtonText(highType.getToggleState()?"SHELF":"BELL");
     const auto p=processor.getLoop().getPosition();position.setText(p.valid?timeText(p.seconds)+"  /  "+timeText(p.duration):"Position unavailable",juce::dontSendNotification);
     const auto playback=processor.getMediaController().playbackState();
@@ -239,7 +265,7 @@ void RefMatchAudioProcessorEditor::drawSpectrum(juce::Graphics& g,juce::Rectangl
         const float low=processor.apvts.getRawParameterValue("matchlow")->load();
         const float high=processor.apvts.getRawParameterValue("matchhigh")->load();
         const auto fx=[&](float hz){return plot.getX()+float(std::log(hz/20.f)/std::log(1000.f))*plot.getWidth();};
-        const float lx=fx(low),hx=fx(high);
+        const float lx=low<=30.01f?plot.getX():fx(low),hx=high>=19999.f?plot.getRight():fx(high);
         g.setColour(black.withAlpha(.48f));g.fillRect(plot.getX(),plot.getY(),std::max(0.f,lx-plot.getX()),plot.getHeight());g.fillRect(hx,plot.getY(),std::max(0.f,plot.getRight()-hx),plot.getHeight());
         g.setColour(cyan.withAlpha(.9f));g.drawVerticalLine(int(lx),plot.getY(),plot.getBottom());
         g.setColour(violet.withAlpha(.9f));g.drawVerticalLine(int(hx),plot.getY(),plot.getBottom());
@@ -263,7 +289,7 @@ void RefMatchAudioProcessorEditor::paint(juce::Graphics& g)
 {
     g.fillAll(black);
     g.setGradientFill(juce::ColourGradient(juce::Colour(0xff172238),0,0,black,640,250,false));g.fillRect(getLocalBounds());g.setColour(text);g.setFont(juce::Font(juce::FontOptions(23,juce::Font::bold)));g.drawText("RefMatch",20,12,170,30,juce::Justification::left);
-    g.setFont(juce::Font(juce::FontOptions(10)));g.setColour(muted);g.drawText("0.5.6   /   STREAM",455,18,164,20,juce::Justification::right);
+    g.setFont(juce::Font(juce::FontOptions(10)));g.setColour(muted);g.drawText("0.5.10   /   STREAM",455,18,164,20,juce::Justification::right);
     for(int side=0;side<2;++side) {
         const juce::Rectangle<float> r(side?370.f:20.f,60,250,114);
         g.setGradientFill(juce::ColourGradient(panel.brighter(.12f),r.getTopLeft(),panel.darker(.12f),r.getBottomRight(),false));g.fillRoundedRectangle(r,12);
@@ -281,7 +307,9 @@ void RefMatchAudioProcessorEditor::paint(juce::Graphics& g)
     g.setFont(juce::Font(juce::FontOptions(9)));
     g.drawText(media.artist,479,96,128,14,juce::Justification::left);
     g.drawText(juce::String(processor.getSourcePeakDb(),1)+" dB",87,97,68,16,juce::Justification::left);
-    g.setFont(juce::Font(juce::FontOptions(9)));g.setColour(muted);g.drawText("A processing",91,111,84,12,juce::Justification::left);
+    g.setFont(juce::Font(juce::FontOptions(9)));g.setColour(muted);
+    const bool matchBypassed=processor.apvts.getRawParameterValue("processingafter")->load()<=.5f;
+    g.drawText(matchBypassed?"MATCH BYPASSED":"MATCHED",91,111,110,12,juce::Justification::left);
     auto meter=[&](float x,float y,float width,float db,juce::Colour colour) {
         g.setColour(line);g.fillRoundedRectangle(x,y,width,3,1.5f);
         g.setColour(colour);g.fillRoundedRectangle(x,y,width*std::clamp((db+60.f)/60.f,0.f,1.f),3,1.5f);
@@ -329,13 +357,16 @@ void RefMatchAudioProcessorEditor::paint(juce::Graphics& g)
             const int x=20+i*204;g.setColour(panel);g.fillRoundedRectangle(float(x),542,192,76,7);
             g.setColour(violet);g.drawText(i==0?"LOW":i==1?"MID":"HIGH",x+8,542,160,16,juce::Justification::left);
         }
-        if(showTone){g.setColour(muted);g.setFont(juce::Font(juce::FontOptions(9)));g.drawText("30–300 Hz",28,610,80,14,juce::Justification::left);g.drawText("200 Hz–6 kHz",232,610,92,14,juce::Justification::left);g.drawText("3–20 kHz",436,610,80,14,juce::Justification::left);}
+        if(showTone){g.setColour(muted);g.setFont(juce::Font(juce::FontOptions(9)));g.drawText("30-300 Hz",28,610,80,14,juce::Justification::left);g.drawText("200 Hz-6 kHz",232,610,92,14,juce::Justification::left);g.drawText("3-20 kHz",436,610,80,14,juce::Justification::left);}
     }
-    if(processor.getLoop().isEnabled()) {
+    {
+        const bool enabled=processor.getLoop().isEnabled();
         const bool active=processor.getLoop().isActive();
         const float pulse=active ? .35f+.65f*float(.5+.5*std::sin(juce::Time::getMillisecondCounterHiRes()*.008)) : 1.f;
-        g.setColour((active?violet:cyan).withAlpha(pulse));g.fillEllipse(300,25,6,6);
-        g.setFont(juce::Font(juce::FontOptions(10)));g.drawText(active?"LOOP ACTIVE":"LOOP WAITING",312,18,124,20,juce::Justification::left);
+        const auto stateColour=enabled?(active?violet:cyan):muted;
+        g.setColour(stateColour.withAlpha(enabled?pulse:.55f));g.fillEllipse(542,222,5,5);
+        g.setFont(juce::Font(juce::FontOptions(8.5f)));
+        g.drawText(enabled?(active?"ACTIVE":"WAITING"):"OFF",551,217,69,14,juce::Justification::left);
     }
     if(page==2){g.setColour(muted);g.drawText("IN",20,316,30,20,juce::Justification::left);g.drawText("OUT",238,316,34,20,juce::Justification::left);g.drawText("Drag the white playhead to seek. Drag a region to loop.",20,370,600,20,juce::Justification::left);}
 }
@@ -343,6 +374,8 @@ void RefMatchAudioProcessorEditor::paint(juce::Graphics& g)
 float RefMatchAudioProcessorEditor::hzToGraphX(float hz) const
 {
     const float left=32.f,width=576.f;
+    if(hz<=30.01f)return left;
+    if(hz>=19999.f)return left+width;
     return left+float(std::log(std::clamp(hz,20.f,20000.f)/20.f)/std::log(1000.f))*width;
 }
 float RefMatchAudioProcessorEditor::graphXToHz(float x) const
@@ -378,15 +411,15 @@ void RefMatchAudioProcessorEditor::updateMatchHandle(float x)
 
 void RefMatchAudioProcessorEditor::resized()
 {
-    a.setBounds(34,76,42,38);b.setBounds(384,76,42,38);switchButton.setBounds(280,94,80,38);quickLoop.setBounds(280,138,80,24);beforeAfter.setBounds(174,76,80,26);
+    a.setBounds(34,76,42,38);b.setBounds(384,76,42,38);switchButton.setBounds(280,94,80,38);beforeAfter.setBounds(142,76,120,26);
     gain.setBounds(75,120,180,28);back.setBounds(384,123,48,26);play.setBounds(439,123,112,26);forward.setBounds(558,123,48,26);
-    eqTab.setBounds(20,190,292,28);loopTab.setBounds(328,190,292,28);
+    eqTab.setBounds(20,190,292,28);loopTab.setBounds(328,190,206,28);quickLoop.setBounds(542,190,78,28);
     recordMix.setBounds(20,234,180,32);recordRef.setBounds(212,234,180,32);match.setBounds(404,234,102,32);reset.setBounds(516,234,104,32);
     mixProfile.setBounds(20,267,180,24);refProfile.setBounds(212,267,180,24);eqOn.setBounds(520,269,100,24);
     amount.setBounds(76,475,232,28);smooth.setBounds(380,475,238,28);
     toneButton.setBounds(20,517,112,25);toneOn.setBounds(146,517,114,25);graphRange.setBounds(366,517,126,25);toneReset.setBounds(504,517,116,25);
     for(int i=0;i<3;++i){tone[2*i].setBounds(26+i*204,560,180,24);tone[2*i+1].setBounds(26+i*204,588,180,24);}
-    lowType.setBounds(118,541,82,20);midQ.setBounds(322,541,96,20);highType.setBounds(526,541,82,20);
+    lowType.setBounds(62,543,58,18);midQ.setBounds(300,541,118,20);highType.setBounds(470,543,58,18);
     timeline.setBounds(20,230,600,72);inTime.setBounds(52,314,92,28);setIn.setBounds(152,314,70,28);outTime.setBounds(278,314,92,28);setOut.setBounds(378,314,70,28);loopOn.setBounds(480,314,120,28);position.setBounds(20,345,600,22);
     status.setBounds(20,getHeight()-30,600,24);
 }

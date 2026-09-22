@@ -1,4 +1,13 @@
-# RefMatch 0.5.9 — independent reference analysis / Tone EQ
+# RefMatch 0.5.10 — UI cleanup
+
+## 0.5.10 changes
+
+- Groups the persistent loop ON/OFF control and ACTIVE/WAITING status beside the LOOP tab.
+- Renames the A-side comparison control to BYPASS MATCH; bypass keeps A gain while Match EQ and Tone EQ are bypassed.
+- Shows MATCHED / MATCH BYPASSED under YOUR MIX.
+- Pins the 30 Hz Match EQ low handle to the left edge at its minimum, mirroring the 20 kHz high handle.
+- Makes LOW/HIGH SHELF/BELL controls compact and visually integrated with the Tone EQ band headers.
+- Uses ASCII frequency-range labels to avoid mojibake in plugin UI.
 
 AU/VST3 plugin only; no helper or standalone app. Uses the working system-media
 transport and 20 ms mix fade, with orange MIX and purple REFERENCE accents.
