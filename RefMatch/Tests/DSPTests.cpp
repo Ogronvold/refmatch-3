@@ -72,7 +72,7 @@ int main()
     for(int i=0;i<512;++i)mix.setSample(0,i,float(.1*std::sin(i*.2)));
     juce::AudioBuffer<float> original;original.makeCopyOf(mix);eq.process(mix);
     for(int i=0;i<512;++i)require(std::abs(mix.getSample(0,i)-original.getSample(0,i))<.0001,"zero amount is transparent");
-    eq.setAmount(0);eq.setTone({{3,1000,0,2000,0,8000}});eq.refresh();
+    eq.setAmount(0);eq.setTone({{0,120,3,1000,0,8000}});eq.refresh();
     const auto manual=eq.getCurveDb();float manualPeak=0;for(auto db:manual)manualPeak=std::max(manualPeak,db);
     require(manualPeak>2.9,"manual Tone EQ remains active at zero Match Amount");
     inputEnergy=0;outputEnergy=0;
@@ -82,7 +82,7 @@ int main()
         eq.process(mix);
         if(block>50)for(int i=0;i<512;++i)outputEnergy+=mix.getSample(0,i)*mix.getSample(0,i);
     }
-    require(std::abs(10*std::log10(outputEnergy/inputEnergy)-3)<.15,"manual Tone EQ applies 3 dB to actual audio after matching");
+    require(std::abs(10*std::log10(outputEnergy/inputEnergy)-3)<.15,"manual MID Tone EQ applies 3 dB to actual audio after matching");
     const auto enabledToneCurve=eq.getCurveDb();
     eq.setToneEnabled(false);eq.refresh();
     for(auto db:eq.getCurveDb())require(std::abs(db)<.0001,"Tone OFF removes manual response at zero Match Amount");

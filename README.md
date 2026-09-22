@@ -1,9 +1,9 @@
-# RefMatch 0.5.8 — independent reference analysis / Tone EQ
+# RefMatch 0.5.9 — independent reference analysis / Tone EQ
 
 AU/VST3 plugin only; no helper or standalone app. Uses the working system-media
 transport and 20 ms mix fade, with orange MIX and purple REFERENCE accents.
 
-## 0.5.8 changes
+## 0.5.9 changes
 
 - Updated the DSP regression test so it validates the new Max Correction behaviour instead of the legacy behaviour that ignored the limit.
 
