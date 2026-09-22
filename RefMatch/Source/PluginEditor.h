@@ -9,6 +9,7 @@ public:
     RefMatchLookAndFeel();
     void drawLinearSlider(juce::Graphics&,int,int,int,int,float,float,float,juce::Slider::SliderStyle,juce::Slider&) override;
     void drawButtonBackground(juce::Graphics&,juce::Button&,const juce::Colour&,bool,bool) override;
+    void drawButtonText(juce::Graphics&,juce::TextButton&,bool,bool) override;
     void drawToggleButton(juce::Graphics&,juce::ToggleButton&,bool,bool) override;
 };
 class RefMatchAudioProcessorEditor : public juce::AudioProcessorEditor,private juce::Timer

@@ -1,6 +1,6 @@
-# RefMatch 0.5.14 — 200% Amount + coloured applied curve
+# RefMatch 0.5.16 — 200% Amount + coloured applied curve
 
-## 0.5.14 changes
+## 0.5.16 changes
 - Match Amount now runs from 0–200%. 100% remains the normal full learned match; 100–200% intentionally exaggerates it.
 - The applied EQ response is no longer a plain white line: near-zero correction stays almost white, then stronger correction moves through mint into cyan/blue.
 - The purple curve remains the fixed 100% target for orientation.
@@ -102,10 +102,24 @@ MIX measurement cannot invent audio when Logic sends none. REF requires capture 
 - Replaced the ambiguous Before/After checkbox with an explicit MATCH ON / BYPASSED state button; A gain stays active while matching is bypassed.
 
 
-## 0.5.14 visual polish
+## 0.5.16 visual polish
 - Darker, cleaner panel hierarchy with softer borders and inner highlights.
 - Subtle orange/purple bloom around selected source cards and active controls.
 - Cleaner button rendering and more restrained gradients.
 - Pill-style quick Loop and EQ toggles.
 - Softer graph/tone cards and slider glow.
 - DSP and matching behaviour unchanged from 0.5.13.
+
+
+## 0.5.16 visual depth pass
+- Circular SWITCH control with bidirectional-arrow icon, inner highlight and subtle bloom.
+- SWITCH/CANCEL state label separated below the control for a cleaner hierarchy.
+- Denser logarithmic Match EQ grid with major/minor frequency guides and a clearer 0 dB line.
+- Applied response now has soft multi-pass bloom while retaining its magnitude-sensitive colour.
+- 100% target curve gets a subtle filled area and glow for more depth.
+- Live before/after spectrum traces get translucent area fills for a richer graph without changing DSP.
+
+## 0.5.16 UI polish
+- Tone EQ redesigned with cleaner cards, section labels, separated GAIN/FREQ rows and tidier shelf/Q controls.
+- MATCH ON now has a clearly illuminated active state; BYPASSED is visually subdued.
+- RECORD MIX / RECORD REF now use dedicated record icons and cleaner button typography.
