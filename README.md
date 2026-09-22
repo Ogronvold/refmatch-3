@@ -1,9 +1,9 @@
-# RefMatch 0.5.6 — independent reference analysis / Tone EQ
+# RefMatch 0.5.7 — independent reference analysis / Tone EQ
 
 AU/VST3 plugin only; no helper or standalone app. Uses the working system-media
 transport and 20 ms mix fade, with orange MIX and purple REFERENCE accents.
 
-## 0.5.6 changes
+## 0.5.7 changes
 
 Loop remains enabled within the plugin instance until you turn it off. RECORD REF,
 metadata outages, failed seek, A/B, pause and source changes do not clear the toggle.

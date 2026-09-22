@@ -37,6 +37,7 @@ private:
     juce::TextButton a{"A"},b{"B"},switchButton{"SWITCH"};
     juce::TextButton eqTab{"MATCH EQ"},loopTab{"LOOP"};
     juce::TextButton play{"PLAY"},toneButton{"TONE EQ"},toneReset{"RESET TONE"};
+    juce::TextButton recordMix{"RECORD MIX"},recordRef{"RECORD REF"},match{"MATCH"},reset{"RESET"};
     juce::TextButton lowType{"SHELF"},highType{"SHELF"};
     juce::ToggleButton eqOn{"EQ ON"},toneOn{"TONE ON"},quickLoop{"LOOP"},beforeAfter{"AFTER"};
     juce::ComboBox graphRange;
