@@ -1,3 +1,14 @@
+# RefMatch 0.5.18 — Loop zoom + Match range fixes
+
+## 0.5.18 changes
+
+- Loop pseudo-waveform now visibly zooms with the timeline. The waveform envelope is tied to absolute track time, so zooming stretches/expands detail instead of drawing the same pattern again.
+- Match EQ low cutoff now ranges from 20 Hz to 1 kHz and uses 0.1 Hz parameter resolution; values such as 25 Hz are possible.
+- Match EQ low cutoff default is now 20 Hz.
+- Match EQ high cutoff default is now 20 kHz instead of 16 kHz.
+- Match-range labels now reflect the actual parameter value, including 20 Hz at the left edge.
+- No DSP matching algorithm changes in this release.
+
 # RefMatch 0.5.17 — Loop UI + Match feedback
 
 ## 0.5.17 changes

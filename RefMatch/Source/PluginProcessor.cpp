@@ -172,10 +172,10 @@ juce::AudioProcessorValueTreeState::ParameterLayout RefMatchAudioProcessor::crea
     params.push_back(std::make_unique<juce::AudioParameterFloat>("tone1q","Mid Q",juce::NormalisableRange<float>(0.3f,4.0f,0.01f,0.45f),0.75f));
     params.push_back(std::make_unique<juce::AudioParameterBool>("tone2shelf","High Shelf",true));
     params.push_back(std::make_unique<juce::AudioParameterBool>("toneenabled","Tone EQ Enabled",true));
-    juce::NormalisableRange<float> lowRange(30.f,1000.f,1.f);lowRange.setSkewForCentre(120.f);
+    juce::NormalisableRange<float> lowRange(20.f,1000.f,0.1f);lowRange.setSkewForCentre(120.f);
     juce::NormalisableRange<float> highRange(1000.f,20000.f,1.f);highRange.setSkewForCentre(12000.f);
-    params.push_back(std::make_unique<juce::AudioParameterFloat>("matchlow","Match Low",lowRange,30.f));
-    params.push_back(std::make_unique<juce::AudioParameterFloat>("matchhigh","Match High",highRange,16000.f));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>("matchlow","Match Low",lowRange,20.f));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>("matchhigh","Match High",highRange,20000.f));
     params.push_back(std::make_unique<juce::AudioParameterBool>("processingafter","Before After",true));
     return { params.begin(), params.end() };
 }

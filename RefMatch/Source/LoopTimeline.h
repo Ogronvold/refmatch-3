@@ -34,11 +34,21 @@ public:
             const float left=std::clamp(x(in),r.getX(),r.getRight());
             const float right=std::clamp(x(out),r.getX(),r.getRight());
 
-            // Decorative pseudo-waveform: deliberately signal-like, but not presented as source audio data.
-            for(int i=0;i<118;++i) {
-                const float px=r.getX()+5.f+(r.getWidth()-10.f)*i/117.f;
-                const double t=window.first+(window.second-window.first)*i/117.0;
-                const float a=7.f+9.f*float(.45+.28*std::sin(i*.71)+.18*std::sin(i*.19+1.4)+.09*std::sin(i*1.77));
+            // Decorative pseudo-waveform. The envelope is derived from absolute track time,
+            // not the screen index, so zooming into the timeline visibly stretches the
+            // waveform detail instead of redrawing the same pattern at every zoom level.
+            const int bars=juce::jlimit(96,260,int(118.0*std::sqrt(zoom)));
+            for(int i=0;i<bars;++i) {
+                const float frac=bars>1?float(i)/float(bars-1):0.f;
+                const float px=r.getX()+5.f+(r.getWidth()-10.f)*frac;
+                const double t=window.first+(window.second-window.first)*double(frac);
+                const double phase=t*2.0*juce::MathConstants<double>::pi;
+                const double envelope=.48
+                    + .22*std::sin(phase/7.3 + .4)
+                    + .14*std::sin(phase/2.15 + 1.2)
+                    + .08*std::sin(phase*.73 + 2.1)
+                    + .05*std::sin(phase*1.91 + .7);
+                const float a=juce::jlimit(5.f,24.f,7.f+18.f*float(std::abs(envelope)));
                 const bool selected=t>=in && t<=out;
                 auto c=selected?juce::Colour(0xffa65cf0):juce::Colour(0xff66738a);
                 g.setColour(c.withAlpha(selected?.66f:.30f));

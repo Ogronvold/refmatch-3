@@ -455,7 +455,7 @@ void RefMatchAudioProcessorEditor::drawSpectrum(juce::Graphics& g,juce::Rectangl
         const float low=processor.apvts.getRawParameterValue("matchlow")->load();
         const float high=processor.apvts.getRawParameterValue("matchhigh")->load();
         const auto fx=[&](float hz){return plot.getX()+float(std::log(hz/20.f)/std::log(1000.f))*plot.getWidth();};
-        const float lx=low<=30.01f?plot.getX():fx(low),hx=high>=19999.f?plot.getRight():fx(high);
+        const float lx=low<=20.01f?plot.getX():fx(low),hx=high>=19999.f?plot.getRight():fx(high);
         g.setColour(black.withAlpha(.48f));g.fillRect(plot.getX(),plot.getY(),std::max(0.f,lx-plot.getX()),plot.getHeight());g.fillRect(hx,plot.getY(),std::max(0.f,plot.getRight()-hx),plot.getHeight());
         g.setColour(cyan.withAlpha(.9f));g.drawVerticalLine(int(lx),plot.getY(),plot.getBottom());
         g.setColour(violet.withAlpha(.9f));g.drawVerticalLine(int(hx),plot.getY(),plot.getBottom());
@@ -602,7 +602,7 @@ void RefMatchAudioProcessorEditor::paint(juce::Graphics& g)
 float RefMatchAudioProcessorEditor::hzToGraphX(float hz) const
 {
     const float left=32.f,width=576.f;
-    if(hz<=30.01f)return left;
+    if(hz<=20.01f)return left;
     if(hz>=19999.f)return left+width;
     return left+float(std::log(std::clamp(hz,20.f,20000.f)/20.f)/std::log(1000.f))*width;
 }
@@ -632,7 +632,7 @@ void RefMatchAudioProcessorEditor::updateMatchHandle(float x)
     auto* highP=dynamic_cast<juce::AudioParameterFloat*>(processor.apvts.getParameter("matchhigh"));
     if(!lowP||!highP)return;
     const float low=processor.apvts.getRawParameterValue("matchlow")->load(),high=processor.apvts.getRawParameterValue("matchhigh")->load();
-    if(matchDrag==MatchDrag::low){hz=std::min(hz,high/1.25f);hz=std::clamp(hz,30.f,1000.f);lowP->setValueNotifyingHost(lowP->convertTo0to1(hz));}
+    if(matchDrag==MatchDrag::low){hz=std::min(hz,high/1.25f);hz=std::clamp(hz,20.f,1000.f);lowP->setValueNotifyingHost(lowP->convertTo0to1(hz));}
     if(matchDrag==MatchDrag::high){hz=std::max(hz,low*1.25f);hz=std::clamp(hz,1000.f,20000.f);highP->setValueNotifyingHost(highP->convertTo0to1(hz));}
     repaint();
 }

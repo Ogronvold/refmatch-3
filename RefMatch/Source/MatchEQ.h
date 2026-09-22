@@ -31,7 +31,7 @@ private:
     std::array<EQDesign::Coeff,stages> current{},target{},published{};
     EQDesign::Gains learned{};
     std::atomic<bool> toneEnabled{true}, lowShelf{true}, highShelf{true};
-    std::atomic<float> amount{.6f},limit{4},smoothing{.35f},midQ{.75f},matchLow{30.f},matchHigh{16000.f};
+    std::atomic<float> amount{.6f},limit{4},smoothing{.35f},midQ{.75f},matchLow{20.f},matchHigh{20000.f};
     std::atomic<double> rate{48000};
     mutable juce::SpinLock lock;
     bool dirty=true;
