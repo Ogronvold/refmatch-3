@@ -266,7 +266,27 @@ void RefMatchAudioProcessorEditor::drawSpectrum(juce::Graphics& g,juce::Rectangl
         // Dim 100% target underneath; bright white is the correction currently
         // being applied, so moving Amount visibly morphs toward/away from target.
         g.setColour(violet.withAlpha(.28f));g.strokePath(makeCurvePath(fullCurve),juce::PathStrokeType(1.25f));
-        g.setColour(eqOn.getToggleState()?text:muted);g.strokePath(makeCurvePath(curve),juce::PathStrokeType(2.4f));
+
+        // Draw the actually-applied response as a magnitude-sensitive colour line.
+        // Near 0 dB it stays almost white; stronger corrections move through mint
+        // into cyan/blue so it is immediately obvious where Match EQ is working.
+        if(curve.size()>1) {
+            const auto nearWhite=eqOn.getToggleState()?text:muted;
+            const juce::Colour mint(0xff73e6b1), blue(0xff55a7ff);
+            for(size_t i=1;i<curve.size();++i) {
+                const float x1=plot.getX()+float(i-1)/float(curve.size()-1)*plot.getWidth();
+                const float x2=plot.getX()+float(i)/float(curve.size()-1)*plot.getWidth();
+                const float y1=plot.getCentreY()-std::clamp(curve[i-1],-scale,scale)/(2*scale)*plot.getHeight();
+                const float y2=plot.getCentreY()-std::clamp(curve[i],-scale,scale)/(2*scale)*plot.getHeight();
+                const float magnitude=.5f*(std::abs(curve[i-1])+std::abs(curve[i]));
+                const float strength=std::clamp(magnitude/4.f,0.f,1.f);
+                juce::Colour colour=nearWhite.interpolatedWith(mint,std::min(1.f,strength*1.6f));
+                if(strength>.35f) colour=colour.interpolatedWith(blue,std::clamp((strength-.35f)/.65f,0.f,1.f));
+                if(!eqOn.getToggleState()) colour=colour.withMultipliedAlpha(.55f);
+                g.setColour(colour);
+                g.drawLine(x1,y1,x2,y2,2.4f);
+            }
+        }
 
         const float low=processor.apvts.getRawParameterValue("matchlow")->load();
         const float high=processor.apvts.getRawParameterValue("matchhigh")->load();
@@ -284,7 +304,7 @@ void RefMatchAudioProcessorEditor::drawSpectrum(juce::Graphics& g,juce::Rectangl
         // Keep the graph legend clearly above the plotted response so it never
         // sits on top of the low-frequency curve/handle labels.
         auto legend=r.reduced(12);legend.setY(r.getY()+4);legend.setHeight(12);
-        g.drawText(juce::String("+/- ")+juce::String(scale,0)+" dB   "+(eqOn.getToggleState()?"APPLIED (WHITE) / 100% TARGET (PURPLE)":"EQ BYPASSED / STORED CURVE")+(outside?"  (choose wider range)":""),legend,juce::Justification::left);
+        g.drawText(juce::String("+/- ")+juce::String(scale,0)+" dB   "+(eqOn.getToggleState()?"APPLIED (COLOUR) / 100% TARGET (PURPLE)":"EQ BYPASSED / STORED CURVE")+(outside?"  (choose wider range)":""),legend,juce::Justification::left);
     }else{
         for(int side=0;side<2;++side){auto values=side?processor.getReferenceSpectrum():processor.getSourceSpectrum();juce::Path path;
             for(int i=0;i<180;++i){const double hz=20*std::pow(1000.,i/179.);const int index=std::clamp(int(hz*SpectrumAnalyser::fftSize/processor.getSampleRateForDisplay()),1,SpectrumAnalyser::bins-1);const float x=plot.getX()+i/179.f*plot.getWidth(),y=plot.getBottom()-std::clamp((values[index]+100)/100.f,0.f,1.f)*plot.getHeight();if(!i)path.startNewSubPath(x,y);else path.lineTo(x,y);}
@@ -299,7 +319,7 @@ void RefMatchAudioProcessorEditor::paint(juce::Graphics& g)
 {
     g.fillAll(black);
     g.setGradientFill(juce::ColourGradient(juce::Colour(0xff172238),0,0,black,640,250,false));g.fillRect(getLocalBounds());g.setColour(text);g.setFont(juce::Font(juce::FontOptions(23,juce::Font::bold)));g.drawText("RefMatch",20,12,170,30,juce::Justification::left);
-    g.setFont(juce::Font(juce::FontOptions(10)));g.setColour(muted);g.drawText("0.5.12   /   STREAM",455,18,164,20,juce::Justification::right);
+    g.setFont(juce::Font(juce::FontOptions(10)));g.setColour(muted);g.drawText("0.5.13   /   STREAM",455,18,164,20,juce::Justification::right);
     for(int side=0;side<2;++side) {
         const juce::Rectangle<float> r(side?370.f:20.f,60,250,114);
         g.setGradientFill(juce::ColourGradient(panel.brighter(.12f),r.getTopLeft(),panel.darker(.12f),r.getBottomRight(),false));g.fillRoundedRectangle(r,12);

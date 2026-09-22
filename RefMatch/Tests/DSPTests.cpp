@@ -72,6 +72,11 @@ int main()
     float halfMax=0,threeQuarterMax=0,fullMax=0;
     for(size_t i=0;i<fullCurve.size();++i){halfMax=std::max(halfMax,halfCurve[i]);threeQuarterMax=std::max(threeQuarterMax,threeQuarterCurve[i]);fullMax=std::max(fullMax,fullCurve[i]);}
     require(halfMax<threeQuarterMax && threeQuarterMax<fullMax,"applied graph continues moving from 50 through 75 to 100 percent");
+    eq.setAmount(1.5f);const auto oneFiftyCurve=eq.getCurveDb();
+    eq.setAmount(2.f);const auto twoHundredCurve=eq.getCurveDb();
+    float oneFiftyMax=0,twoHundredMax=0;
+    for(size_t i=0;i<twoHundredCurve.size();++i){oneFiftyMax=std::max(oneFiftyMax,std::abs(oneFiftyCurve[i]));twoHundredMax=std::max(twoHundredMax,std::abs(twoHundredCurve[i]));}
+    require(oneFiftyMax>fullMax && twoHundredMax>oneFiftyMax,"Amount can deliberately over-match from 100 through 200 percent");
     eq.setAmount(0);eq.refresh();
     for(int block=0;block<100;++block){mix.clear();eq.process(mix);}
     for(int i=0;i<512;++i)mix.setSample(0,i,float(.1*std::sin(i*.2)));

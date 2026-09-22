@@ -155,7 +155,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout RefMatchAudioProcessor::crea
         "sourcegain", "Mix Gain", juce::NormalisableRange<float>(-24.0f, 24.0f, 0.1f), 0.0f));
     params.push_back(std::make_unique<juce::AudioParameterBool>("matchenabled", "Match EQ", false));
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        "matchamount", "Match Amount", juce::NormalisableRange<float>(0.0f, 100.0f, 0.1f), 60.0f));
+        "matchamount", "Match Amount", juce::NormalisableRange<float>(0.0f, 200.0f, 0.1f), 60.0f));
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         "maxcorrection", "Max Correction", juce::NormalisableRange<float>(0.5f, 12.0f, 0.1f), 4.0f));
     params.push_back(std::make_unique<juce::AudioParameterBool>("bypass", "Bypass", false));

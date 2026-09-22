@@ -1,4 +1,11 @@
-# RefMatch 0.5.12 — UI cleanup
+# RefMatch 0.5.13 — 200% Amount + coloured applied curve
+
+## 0.5.13 changes
+- Match Amount now runs from 0–200%. 100% remains the normal full learned match; 100–200% intentionally exaggerates it.
+- The applied EQ response is no longer a plain white line: near-zero correction stays almost white, then stronger correction moves through mint into cyan/blue.
+- The purple curve remains the fixed 100% target for orientation.
+- Added a DSP regression test that verifies the response continues increasing through 150% and 200%.
+
 
 ## 0.5.12 changes
 

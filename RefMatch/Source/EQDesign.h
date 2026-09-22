@@ -75,8 +75,8 @@ inline Gains fit(const Gains& mix,const Gains& ref,double sr,double smoothing)
 inline Gains scaled(Gains gains,double amount,double limit,double sr)
 {
     // First constrain the learned 100% curve to Max Correction, then use Amount
-    // as a true 0-100% wet scaling of that complete correction. This prevents
-    // Amount from visually/audibly plateauing as soon as the limit is reached.
+    // as a true wet scaling of that complete correction. 100% is the normal full
+    // match; values above 100% deliberately exaggerate the learned correction.
     double maximum=0;
     for(int i=0;i<160;++i) {
         const double hz=20*std::pow(std::min(20000.,sr*.45)/20.,i/159.);
@@ -84,7 +84,7 @@ inline Gains scaled(Gains gains,double amount,double limit,double sr)
         maximum=std::max(maximum,std::abs(db));
     }
     if(maximum>limit && maximum>0.0)for(auto& g:gains)g*=limit/maximum;
-    const double wet=std::clamp(amount,0.,1.);
+    const double wet=std::clamp(amount,0.,2.);
     for(auto& g:gains)g*=wet;
     return gains;
 }
