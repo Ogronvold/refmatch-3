@@ -57,7 +57,8 @@ int main()
         if(block>=100)for(int i=0;i<512;++i)outputEnergy+=mix.getSample(0,i)*mix.getSample(0,i);
     }
     const double measured=10*std::log10(outputEnergy/inputEnergy);
-    require(std::abs(measured-3)<.15,"100% Amount applies full 3 dB correction despite legacy saved limit");
+    require(std::abs(measured-.5)<.15,"Max Correction limits the audible match response");
+    eq.setMaxCorrectionDb(12.f);eq.refresh();
     const auto fullScaleCurve=eq.getCurveDb(1.f);
     eq.setAmount(.5f);const auto halfCurve=eq.getCurveDb();
     require(eq.getCurveDb(1.f)==fullScaleCurve,"graph full-scale response does not change with Amount");
