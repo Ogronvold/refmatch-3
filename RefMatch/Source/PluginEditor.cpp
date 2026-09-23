@@ -474,23 +474,44 @@ void RefMatchAudioProcessorEditor::drawSpectrum(juce::Graphics& g,juce::Rectangl
     g.setColour(juce::Colours::white.withAlpha(.08f));
     g.drawHorizontalLine(int(plot.getCentreY()),plot.getX(),plot.getRight());
     if(eq) {
-        // Soft live metric behind the EQ response: before processing vs after processing.
-        for(int side=0;side<2;++side) {
-            const auto values=side?processor.getAfterEffectSpectrum():processor.getBeforeEffectSpectrum();
+        // Live spectral metric follows the source that is actually being auditioned.
+        // A uses the plug-in input / post-EQ analysers. B uses the continuously
+        // captured system-reference analyser. Reference audio remains analysis-only
+        // and is never routed through the plug-in output.
+        if (processor.isReferenceSelected()) {
+            const auto values=processor.getReferenceSpectrum();
             juce::Path spectrum;
             for(int i=0;i<180;++i) {
                 const double hz=20*std::pow(1000.,i/179.);
-                const int index=std::clamp(int(hz*SpectrumAnalyser::fftSize/processor.getSampleRateForDisplay()),1,SpectrumAnalyser::bins-1);
+                const int index=std::clamp(int(hz*SpectrumAnalyser::fftSize/48000.0),1,SpectrumAnalyser::bins-1);
                 const float x=plot.getX()+i/179.f*plot.getWidth();
                 const float norm=std::clamp((values[index]+90.f)/80.f,0.f,1.f);
                 const float y=plot.getBottom()-norm*plot.getHeight();
                 if(i==0)spectrum.startNewSubPath(x,y);else spectrum.lineTo(x,y);
             }
-            const auto specColour=side?violet:cyan;
             auto specFill=spectrum;specFill.lineTo(plot.getRight(),plot.getBottom());specFill.lineTo(plot.getX(),plot.getBottom());specFill.closeSubPath();
-            g.setColour(specColour.withAlpha(side?.028f:.022f));g.fillPath(specFill);
-            g.setColour(specColour.withAlpha(side?.25f:.16f));
-            g.strokePath(spectrum,juce::PathStrokeType(side?1.1f:.9f,juce::PathStrokeType::curved,juce::PathStrokeType::rounded));
+            g.setColour(violet.withAlpha(.045f));g.fillPath(specFill);
+            g.setColour(violet.withAlpha(.14f));g.strokePath(spectrum,juce::PathStrokeType(4.0f,juce::PathStrokeType::curved,juce::PathStrokeType::rounded));
+            g.setColour(violet.withAlpha(.46f));g.strokePath(spectrum,juce::PathStrokeType(1.25f,juce::PathStrokeType::curved,juce::PathStrokeType::rounded));
+        } else {
+            // MIX keeps the existing subtle before/after live metric.
+            for(int side=0;side<2;++side) {
+                const auto values=side?processor.getAfterEffectSpectrum():processor.getBeforeEffectSpectrum();
+                juce::Path spectrum;
+                for(int i=0;i<180;++i) {
+                    const double hz=20*std::pow(1000.,i/179.);
+                    const int index=std::clamp(int(hz*SpectrumAnalyser::fftSize/processor.getSampleRateForDisplay()),1,SpectrumAnalyser::bins-1);
+                    const float x=plot.getX()+i/179.f*plot.getWidth();
+                    const float norm=std::clamp((values[index]+90.f)/80.f,0.f,1.f);
+                    const float y=plot.getBottom()-norm*plot.getHeight();
+                    if(i==0)spectrum.startNewSubPath(x,y);else spectrum.lineTo(x,y);
+                }
+                const auto specColour=side?violet:cyan;
+                auto specFill=spectrum;specFill.lineTo(plot.getRight(),plot.getBottom());specFill.lineTo(plot.getX(),plot.getBottom());specFill.closeSubPath();
+                g.setColour(specColour.withAlpha(side?.028f:.022f));g.fillPath(specFill);
+                g.setColour(specColour.withAlpha(side?.25f:.16f));
+                g.strokePath(spectrum,juce::PathStrokeType(side?1.1f:.9f,juce::PathStrokeType::curved,juce::PathStrokeType::rounded));
+            }
         }
         const auto curve=processor.getMatchCurveDb();
         const auto fullCurve=processor.getMatchCurveDbAtAmount(1.0f);
@@ -577,7 +598,7 @@ void RefMatchAudioProcessorEditor::paint(juce::Graphics& g)
     g.drawText("RefMatch",44,18,180,30,juce::Justification::left);
     g.setFont(juce::Font(juce::FontOptions(10.f)));g.setColour(muted);
     g.drawText("Match your sound.",44,48,180,16,juce::Justification::left);
-    g.drawText("v0.5.31    /    STREAM",744,24,150,20,juce::Justification::right);
+    g.drawText("v0.5.32    /    STREAM",744,24,150,20,juce::Justification::right);
 
     // Source cards
     const juce::Rectangle<float> mixCard(44,72,360,104), refCard(536,72,380,104);

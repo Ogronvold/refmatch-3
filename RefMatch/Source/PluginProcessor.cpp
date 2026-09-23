@@ -289,6 +289,11 @@ void RefMatchAudioProcessor::setReferenceSelected(bool shouldSelectReference)
         referenceFailure.store(false);
         mixMuted.store(false); // Require a fresh audio callback before issuing PLAY.
         muteOnResume.store(false);
+        // Keep the system-reference analyser alive during normal B playback, not
+        // only while RECORD REF is active. This feeds the live purple spectrum
+        // without routing reference audio through the plug-in output.
+        if (!isReferenceCaptureRunning() && !isReferenceCaptureStarting())
+            startReferenceCapture();
     }
     if (auto* p = dynamic_cast<juce::AudioParameterBool*>(apvts.getParameter("reference")))
     {

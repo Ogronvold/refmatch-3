@@ -1,7 +1,7 @@
-# RefMatch 0.5.31 — Switch Center + Reset Icon
+# RefMatch 0.5.32 — Live Reference Spectrum
 
-- LOOP now behaves like an expandable section beneath the normal action bar.
-- The main action row stays visible in Loop view, including MIX/REF capture, MATCH/MATCHED, RESET, Loop enable, and EQ state.
-- The LOOP button itself lights up while the Loop editor is open and clicking it again returns to Match EQ.
-- Removed the separate LOOP ENABLE header treatment to keep the toolbar consistent.
-- DSP is unchanged from 0.5.29.
+- B/reference now gets a live purple spectral metric during normal reference playback, not only during REF capture.
+- Selecting B starts the existing system-audio analysis capture when needed; reference audio remains analysis-only and is never routed through the plug-in output.
+- A keeps the existing orange/cyan before/after live spectral metric.
+- No Match EQ DSP, gain, routing, transport, Loop, or Tone EQ behaviour was changed.
+
