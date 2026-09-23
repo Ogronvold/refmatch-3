@@ -65,6 +65,7 @@ public:
     void autoGainMatch();
     void learnMatch();
     void clearMatch();
+    void resetSession();
     std::vector<float> getToneCurveDb() const { return matchEQ.getCurveDb(0.f); }
     std::vector<float> getFullMatchCurveDb() const { return matchEQ.getCurveDb(1.f); }
     std::vector<float> getMatchCurveDb() const;

@@ -27,6 +27,9 @@ void RefMatchAudioProcessor::selectSource(bool reference)
 void RefMatchAudioProcessor::recordProfile(LearnCapture::Side side)
 {
     if (recording()==side) { learning.stop(); referenceAnalysis.learning.stop(); learningStatus="Profile captured"; return; }
+    // A new capture invalidates the previously learned relationship. Keep the
+    // user's EQ controls, but return MATCH to the pre-match workflow.
+    if (hasMatch()) clearMatch();
     if (side==LearnCapture::reference && !isReferenceCaptureRunning()) startReferenceCapture();
     selectSource(side==LearnCapture::reference);
     learning.stop();referenceAnalysis.learning.stop();
@@ -357,6 +360,17 @@ void RefMatchAudioProcessor::clearMatch()
     learningStatus="EQ reset";
     apvts.getParameter("matchenabled")->setValueNotifyingHost(0.f);
     apvts.state.setProperty("hasLearnedMatch", false, nullptr);
+}
+
+void RefMatchAudioProcessor::resetSession()
+{
+    // RESET is a workflow reset: remove learned profiles and the applied match
+    // so the plug-in looks/behaves like a fresh session. Manual Tone/Amount
+    // preferences are intentionally preserved.
+    learning.clear();
+    referenceAnalysis.learning.clear();
+    clearMatch();
+    learningStatus="Record MIX and REF, then press MATCH  ·  Recommended: at least 8 s";
 }
 
 std::vector<float> RefMatchAudioProcessor::getMatchCurveDb() const { return matchEQ.getCurveDb(); }

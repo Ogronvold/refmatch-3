@@ -13,6 +13,7 @@ public:
     };
     void start(Side side) { requested.store(side);++revision;const juce::SpinLock::ScopedLockType guard(lock);profiles[side==reference?1:0]={}; }
     void stop() { requested.store(none);++revision; }
+    void clear() { requested.store(none);++revision; const juce::SpinLock::ScopedLockType guard(lock); profiles = {}; position=0; frames=0; sum.fill(0); }
     Side active() const { return Side(requested.load()); }
     Profile get(Side side) const {
         const juce::SpinLock::ScopedLockType guard(lock);return profiles[side==reference?1:0];

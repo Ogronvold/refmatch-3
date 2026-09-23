@@ -82,7 +82,19 @@ void RefMatchLookAndFeel::drawButtonBackground(juce::Graphics& g,juce::Button& b
         return;
     }
 
+    const bool softAction=bool(button.getProperties()["softAction"]);
     if((glow && visualOn) || visualOn) glowRounded(g,r,compact?6.f:8.f,dual?violet:colour,compact?.20f:.17f);
+
+    if(softAction) {
+        if(over || visualOn) glowRounded(g,r,9.f,visualOn?(dual?violet:colour):line,.08f);
+        const auto fill=panelRaised.withMultipliedBrightness(down?.90f:over?1.08f:1.f);
+        g.setGradientFill(juce::ColourGradient(fill.brighter(.035f),r.getTopLeft(),fill.darker(.075f),r.getBottomRight(),false));
+        g.fillRoundedRectangle(r,9.f);
+        g.setColour((visualOn?(dual?violet:colour):line).withAlpha(visualOn?.86f:.70f));
+        g.drawRoundedRectangle(r,9.f,visualOn?1.25f:1.f);
+        g.setColour(juce::Colours::white.withAlpha(over?.05f:.02f));g.drawRoundedRectangle(r.reduced(1.f),8.f,.8f);
+        return;
+    }
 
     if(compact) {
         const auto fill=panelRaised.withMultipliedBrightness(down?.88f:over?1.10f:1.f);
@@ -120,14 +132,16 @@ void RefMatchLookAndFeel::drawButtonText(juce::Graphics& g,juce::TextButton& but
     if(bool(button.getProperties()["resetIcon"])) {
         const auto r=button.getLocalBounds().toFloat();
         const auto c=text.withAlpha(down?.68f:over?1.f:.90f);
-        const float cx=r.getX()+18.f, cy=r.getCentreY();
+        const float x=r.getX()+16.f, cy=r.getCentreY();
+        g.setColour(c.withAlpha(.72f));
+        // "restore controls" icon: three clean parameter rails with knobs.
+        for(int i=-1;i<=1;++i) g.drawLine(x-7.f,cy+i*5.f,x+7.f,cy+i*5.f,1.15f);
         g.setColour(c);
-        juce::Path arc; arc.addCentredArc(cx,cy,7.f,7.f,0.f,-2.25f,2.55f,true);
-        g.strokePath(arc,juce::PathStrokeType(1.6f,juce::PathStrokeType::curved,juce::PathStrokeType::rounded));
-        juce::Path head; head.startNewSubPath(cx-5.5f,cy-5.2f);head.lineTo(cx-8.5f,cy-5.0f);head.lineTo(cx-7.0f,cy-2.2f);
-        g.strokePath(head,juce::PathStrokeType(1.5f,juce::PathStrokeType::curved,juce::PathStrokeType::rounded));
+        g.fillEllipse(x-4.2f,cy-6.9f,3.8f,3.8f);
+        g.fillEllipse(x+1.2f,cy-1.9f,3.8f,3.8f);
+        g.fillEllipse(x-1.2f,cy+3.1f,3.8f,3.8f);
         g.setFont(juce::Font(juce::FontOptions(11.f,juce::Font::bold)));
-        g.drawText(button.getButtonText(),juce::Rectangle<float>(cx+13.f,r.getY(),r.getRight()-(cx+16.f),r.getHeight()),juce::Justification::centredLeft);
+        g.drawText(button.getButtonText(),juce::Rectangle<float>(x+13.f,r.getY(),r.getRight()-(x+16.f),r.getHeight()),juce::Justification::centredLeft);
         return;
     }
     if(bool(button.getProperties()["recordIcon"])) {
@@ -213,8 +227,8 @@ RefMatchAudioProcessorEditor::RefMatchAudioProcessorEditor(RefMatchAudioProcesso
     }};
     recordMix.onClick=[this]{processor.recordProfile(LearnCapture::mix);};
     recordRef.onClick=[this]{processor.recordProfile(LearnCapture::reference);};
-    match.onClick=[this]{processor.learnMatch();matchFlashUntil=juce::Time::getMillisecondCounterHiRes()+850.0;message="Match applied";match.setButtonText("MATCHED");repaint();};
-    reset.onClick=[this]{processor.clearMatch();};
+    match.onClick=[this]{if(processor.hasMatch())return;processor.learnMatch();matchFlashUntil=juce::Time::getMillisecondCounterHiRes()+850.0;message="Match applied";match.setButtonText("MATCHED");repaint();};
+    reset.onClick=[this]{processor.resetSession();message.clear();matchFlashUntil=0.0;matchReady=false;match.setButtonText("MATCH");repaint();};
     reset.getProperties().set("resetIcon",true);
     for(auto* slider:{&gain,&amount,&smooth,&midQ}) {slider->setSliderStyle(juce::Slider::LinearHorizontal);slider->setTextBoxStyle(juce::Slider::TextBoxRight,false,66,24);}
     gain.setTextValueSuffix(" dB");amount.setTextValueSuffix(" %");smooth.setTextValueSuffix(" %");midQ.setTextValueSuffix(" Q");
@@ -236,6 +250,7 @@ RefMatchAudioProcessorEditor::RefMatchAudioProcessorEditor(RefMatchAudioProcesso
     }
     for(auto* button:{&b,&play,&recordRef})button->setColour(juce::TextButton::buttonOnColourId,violet);
     for(auto* button:{&play,&recordMix,&recordRef,&match,&reset})button->getProperties().set("glow",true);
+    for(auto* button:{&play,&back,&forward,&reset,&loopTab,&toneReset})button->getProperties().set("softAction",true);
     match.getProperties().set("dualAccent",true);match.getProperties().set("forceDual",true);
     recordMix.getProperties().set("recordIcon",true);recordRef.getProperties().set("recordIcon",true);
     switchButton.getProperties().set("roundSwitch",true);
@@ -272,7 +287,7 @@ RefMatchAudioProcessorEditor::RefMatchAudioProcessorEditor(RefMatchAudioProcesso
     quickLoop.setColour(juce::ToggleButton::tickColourId,violet);eqOn.setColour(juce::ToggleButton::tickColourId,violet);toneOn.setColour(juce::ToggleButton::tickColourId,violet);
     quickLoop.setTooltip("Toggle the most recently defined loop without opening the LOOP page.");
     eqTab.getProperties().set("dualAccent",true);loopTab.getProperties().set("dualAccent",true);
-    eqTab.getProperties().set("glow",true);loopTab.getProperties().set("glow",true);toneButton.getProperties().set("glow",true);
+    eqTab.getProperties().set("glow",true);loopTab.getProperties().set("glow",true);
     toneOnAttach=std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(p.apvts,"toneenabled",toneOn);
     toneOn.setTooltip("Bypass only the three Tone bands. Keeps their settings and leaves Match EQ active.");
     graphRange.addItem("+/- 12 dB",12);graphRange.addItem("+/- 24 dB",24);graphRange.addItem("+/- 48 dB",48);graphRange.addItem("+/- 96 dB",96);
@@ -306,7 +321,8 @@ void RefMatchAudioProcessorEditor::setPage(int value)
 {
     page=value;
     const bool main=page==1;
-    for(auto* c:std::initializer_list<juce::Component*>{&recordMix,&recordRef,&match,&reset,&eqOn,&amount,&smooth,&toneButton,&toneOn,&graphRange,&mixProfile,&refProfile,&toneReset,&lowType,&highType,&midQ})c->setVisible(main);
+    for(auto* c:std::initializer_list<juce::Component*>{&recordMix,&recordRef,&match,&reset,&eqOn,&amount,&smooth,&toneOn,&graphRange,&mixProfile,&refProfile,&toneReset,&lowType,&highType,&midQ})c->setVisible(main);
+    toneButton.setVisible(false);
     for(auto& control:tone)control.setVisible(main);
     for(auto* c:std::initializer_list<juce::Component*>{&timeline,&position,&clearLoop,&zoomMinus,&zoomPlus,&loopZoom})c->setVisible(page==2);
     for(auto* c:std::initializer_list<juce::Component*>{&inTime,&outTime,&setIn,&setOut})c->setVisible(false);
@@ -368,10 +384,14 @@ void RefMatchAudioProcessorEditor::timerCallback()
     recordRef.setButtonText(processor.recording()==LearnCapture::reference?"STOP REF":"RECORD REF");
     mixProfile.setText(processor.recording()==LearnCapture::mix?"RECORDING  "+juce::String(m.seconds,1)+" s":m.ready?"CAPTURED  "+juce::String(m.seconds,1)+" s":"MIX",juce::dontSendNotification);
     refProfile.setText(processor.recording()==LearnCapture::reference?"RECORDING  "+juce::String(r.seconds,1)+" s":r.ready?"CAPTURED  "+juce::String(r.seconds,1)+" s":"REF",juce::dontSendNotification);
-    matchReady=m.ready&&r.ready&&processor.recording()==LearnCapture::none;
-    match.setEnabled(matchReady);eqOn.setEnabled(processor.hasMatch());
+    const bool matched=processor.hasMatch();
+    matchReady=m.ready&&r.ready&&processor.recording()==LearnCapture::none&&!matched;
+    match.setEnabled(matchReady||matched);eqOn.setEnabled(matched);
     const auto nowMs=juce::Time::getMillisecondCounterHiRes();
-    if(nowMs>=matchFlashUntil) match.setButtonText(matchReady?"READY TO MATCH":"MATCH");
+    if(nowMs>=matchFlashUntil) {
+        match.setButtonText(matched?"MATCHED":matchReady?"READY TO MATCH":"MATCH");
+        if(message=="Match applied") message.clear();
+    }
     juce::String info=page==1?processor.getLearningStatus():page==2?processor.getLoop().getStatus():"A = your mix   /   B = system reference";
     if(page==1 && processor.recording()==LearnCapture::reference && !processor.hasReferenceAudio())info=processor.getReferenceCaptureStatus()+" - waiting for audio";
     if(processor.getTransportError().isNotEmpty())info=processor.getTransportError();
@@ -518,7 +538,7 @@ void RefMatchAudioProcessorEditor::paint(juce::Graphics& g)
     g.drawText("RefMatch",44,18,180,30,juce::Justification::left);
     g.setFont(juce::Font(juce::FontOptions(10.f)));g.setColour(muted);
     g.drawText("Match your sound.",44,48,180,16,juce::Justification::left);
-    g.drawText("v0.5.20    /    STREAM",744,24,150,20,juce::Justification::right);
+    g.drawText("v0.5.23    /    STREAM",744,24,150,20,juce::Justification::right);
 
     // Source cards
     const juce::Rectangle<float> mixCard(44,72,360,104), refCard(536,72,380,104);
@@ -567,7 +587,6 @@ void RefMatchAudioProcessorEditor::paint(juce::Graphics& g)
         const juce::Rectangle<float> toneCard(44,508,872,112);
         g.setGradientFill(juce::ColourGradient(panelRaised.withAlpha(.93f),toneCard.getTopLeft(),panel.darker(.20f),toneCard.getBottomRight(),false));g.fillRoundedRectangle(toneCard,11.f);
         g.setColour(line.withAlpha(.78f));g.drawRoundedRectangle(toneCard,11.f,1.f);g.drawHorizontalLine(543,58,902);
-        g.setColour(text);g.setFont(juce::Font(juce::FontOptions(12.5f,juce::Font::bold)));g.drawText("TONE EQ",60,517,86,20,juce::Justification::left);
         const char* names[3]={"LOW","MID","HIGH"}; const char* ranges[3]={"30 - 300 Hz","200 Hz - 6 kHz","3 - 20 kHz"};
         for(int i=0;i<3;++i){const float x=60.f+i*286.f;const auto accent=i==0?cyan:(i==1?cyan.interpolatedWith(violet,.52f):violet);g.setColour(accent);g.fillEllipse(x,554,10,10);g.setFont(juce::Font(juce::FontOptions(10.5f,juce::Font::bold)));g.drawText(names[i],int(x+18),548,52,22,juce::Justification::left);g.setFont(juce::Font(juce::FontOptions(8.8f)));g.setColour(muted);g.drawText(ranges[i],int(x+70),550,98,18,juce::Justification::left);g.drawText("Gain",int(x),576,34,18,juce::Justification::left);g.drawText("Freq",int(x),600,34,18,juce::Justification::left);if(i<2){g.setColour(line.withAlpha(.45f));g.drawVerticalLine(int(x+272),552,614);}}
     } else {
@@ -636,11 +655,11 @@ void RefMatchAudioProcessorEditor::resized()
 {
     // Top source cards
     a.setBounds(58,86,48,42); b.setBounds(554,86,48,42); switchButton.setBounds(447,78,66,66); matchState.setBounds(292,82,96,24);
-    gain.setBounds(158,124,224,30); back.setBounds(734,132,50,28); play.setBounds(790,132,64,28); forward.setBounds(860,132,50,28);
+    gain.setBounds(158,124,224,30); back.setBounds(722,130,50,30); play.setBounds(780,130,74,30); forward.setBounds(862,130,50,30);
 
     // Main action row: all labels fit at the native 960 px width.
-    recordMix.setBounds(44,184,166,38); recordRef.setBounds(222,184,166,38); match.setBounds(400,184,174,38); reset.setBounds(586,184,102,38);
-    loopTab.setBounds(694,184,70,38); quickLoop.setBounds(766,184,82,38); eqOn.setBounds(852,184,90,38);
+    recordMix.setBounds(44,184,166,38); recordRef.setBounds(222,184,166,38); match.setBounds(400,184,174,38); reset.setBounds(586,184,104,38);
+    loopTab.setBounds(698,184,72,38); quickLoop.setBounds(774,184,82,38); eqOn.setBounds(860,184,82,38);
     mixProfile.setBounds(62,219,146,18); refProfile.setBounds(240,219,146,18);
     eqTab.setBounds(44,184,120,36);
 
@@ -648,7 +667,7 @@ void RefMatchAudioProcessorEditor::resized()
     amount.setBounds(118,446,278,34); smooth.setBounds(488,446,202,34); graphRange.setBounds(804,254,98,24);
 
     // Tone EQ
-    toneButton.setBounds(60,514,94,24); toneOn.setBounds(162,514,104,24); toneReset.setButtonText("Reset All"); toneReset.setBounds(824,514,78,24);
+    toneButton.setBounds(0,0,0,0); toneOn.setBounds(60,514,112,24); toneReset.setButtonText("Reset All"); toneReset.setBounds(814,514,88,24);
     tone[0].setBounds(98,572,176,24); tone[1].setBounds(98,596,176,24);
     tone[2].setBounds(384,572,176,24); tone[3].setBounds(384,596,176,24);
     tone[4].setBounds(670,572,176,24); tone[5].setBounds(670,596,176,24);
@@ -656,7 +675,7 @@ void RefMatchAudioProcessorEditor::resized()
 
     // Loop page
     if(page==2) {
-        eqTab.setBounds(44,184,120,36); loopTab.setBounds(172,184,110,36); quickLoop.setBounds(782,184,82,36);
+        eqTab.setBounds(44,184,128,36); loopTab.setBounds(180,184,104,36); quickLoop.setBounds(774,184,82,36);
     }
     timeline.setBounds(48,258,868,170); position.setBounds(50,432,260,20); clearLoop.setBounds(800,222,116,28);
     zoomMinus.setBounds(116,456,32,28); loopZoom.setBounds(154,456,146,28); zoomPlus.setBounds(306,456,32,28);
