@@ -9,9 +9,15 @@ public:
     enum class State { off,waiting,active,seeking };
     bool setRange(double a,double b) {
         if(!std::isfinite(a)||!std::isfinite(b)||a<0||b-a<.5||b>86400)return false;
-        if(a!=in || b!=out){in=a;out=b;restart();}return true;
+        const bool changed=(a!=in || b!=out || !hasSelection);
+        in=a;out=b;hasSelection=true;
+        if(changed)restart();
+        return true;
     }
-    void enable(bool value){enabled=value;restart();state=value?State::waiting:State::off;}
+    void enable(bool value){
+        if(value && !hasRange()) {enabled=false;restart();state=State::off;return;}
+        enabled=value;restart();state=value?State::waiting:State::off;
+    }
     void restart(){first=true;verifying=false;retryAt=0;}
     void clear(){enabled=false;in=0;out=0;hasSelection=false;restart();state=State::off;}
     bool isEnabled() const{return enabled;}

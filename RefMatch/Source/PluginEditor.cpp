@@ -298,7 +298,7 @@ RefMatchAudioProcessorEditor::RefMatchAudioProcessorEditor(RefMatchAudioProcesso
     a.setTooltip("Listen to your mix. Pauses the active media player.");b.setTooltip("Listen to reference. Mutes MIX and sends system PLAY.");
     recordMix.setTooltip("Record the incoming MIX spectrum before EQ. Click again to finish.");
     recordRef.setTooltip("Record system-reference spectrum. Requires capture permission and host audio processing. Click again to finish.");
-    match.setTooltip("Calculate EQ from the two captured profiles and enable it on MIX.");
+    match.setTooltip("When MIX and REF are captured, READY TO MATCH lights up. Click to calculate EQ and enable it on MIX.");
     setPage(1);processor.startReferenceCapture();startTimerHz(15);
 }
 RefMatchAudioProcessorEditor::~RefMatchAudioProcessorEditor(){stopTimer();setLookAndFeel(nullptr);}
@@ -368,8 +368,10 @@ void RefMatchAudioProcessorEditor::timerCallback()
     recordRef.setButtonText(processor.recording()==LearnCapture::reference?"STOP REF":"RECORD REF");
     mixProfile.setText(processor.recording()==LearnCapture::mix?"RECORDING  "+juce::String(m.seconds,1)+" s":m.ready?"CAPTURED  "+juce::String(m.seconds,1)+" s":"MIX",juce::dontSendNotification);
     refProfile.setText(processor.recording()==LearnCapture::reference?"RECORDING  "+juce::String(r.seconds,1)+" s":r.ready?"CAPTURED  "+juce::String(r.seconds,1)+" s":"REF",juce::dontSendNotification);
-    match.setEnabled(m.ready&&r.ready);eqOn.setEnabled(processor.hasMatch());
-    if(juce::Time::getMillisecondCounterHiRes()>=matchFlashUntil && match.getButtonText()!="MATCH")match.setButtonText("MATCH");
+    matchReady=m.ready&&r.ready&&processor.recording()==LearnCapture::none;
+    match.setEnabled(matchReady);eqOn.setEnabled(processor.hasMatch());
+    const auto nowMs=juce::Time::getMillisecondCounterHiRes();
+    if(nowMs>=matchFlashUntil) match.setButtonText(matchReady?"READY TO MATCH":"MATCH");
     juce::String info=page==1?processor.getLearningStatus():page==2?processor.getLoop().getStatus():"A = your mix   /   B = system reference";
     if(page==1 && processor.recording()==LearnCapture::reference && !processor.hasReferenceAudio())info=processor.getReferenceCaptureStatus()+" - waiting for audio";
     if(processor.getTransportError().isNotEmpty())info=processor.getTransportError();
@@ -577,10 +579,18 @@ void RefMatchAudioProcessorEditor::paint(juce::Graphics& g)
         g.setFont(juce::Font(juce::FontOptions(17.f,juce::Font::bold)));g.setColour(text);g.drawText(len,828,448,88,26,juce::Justification::right);
     }
 
-    if(page==1 && juce::Time::getMillisecondCounterHiRes()<matchFlashUntil) {
-        const double remain=std::clamp((matchFlashUntil-juce::Time::getMillisecondCounterHiRes())/850.0,0.0,1.0);
-        const float pulse=float(.35+.65*std::sin((1.0-remain)*juce::MathConstants<double>::pi));
-        auto rr=match.getBounds().toFloat().expanded(8.f,6.f);glowRounded(g,rr,11.f,violet,.15f+.32f*pulse);g.setColour(cyan.withAlpha(.20f+.25f*pulse));g.drawRoundedRectangle(rr,11.f,1.5f);
+    if(page==1) {
+        const auto now=juce::Time::getMillisecondCounterHiRes();
+        if(now<matchFlashUntil) {
+            const double remain=std::clamp((matchFlashUntil-now)/850.0,0.0,1.0);
+            const float pulse=float(.35+.65*std::sin((1.0-remain)*juce::MathConstants<double>::pi));
+            auto rr=match.getBounds().toFloat().expanded(8.f,6.f);glowRounded(g,rr,11.f,violet,.15f+.32f*pulse);g.setColour(cyan.withAlpha(.20f+.25f*pulse));g.drawRoundedRectangle(rr,11.f,1.5f);
+        } else if(matchReady) {
+            const float pulse=.5f+.5f*std::sin(float(now*.0065));
+            auto rr=match.getBounds().toFloat().expanded(6.f,4.f);
+            glowRounded(g,rr,11.f,violet,.08f+.13f*pulse);
+            g.setColour(cyan.withAlpha(.10f+.12f*pulse));g.drawRoundedRectangle(rr,11.f,1.2f);
+        }
     }
 }
 

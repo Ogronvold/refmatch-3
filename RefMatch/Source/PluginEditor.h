@@ -60,5 +60,6 @@ private:
     int page=1;
     bool showTone=true;
     double matchFlashUntil=0.0;
+    bool matchReady=false;
     enum class MatchDrag { none, low, high } matchDrag=MatchDrag::none;
 };
