@@ -563,7 +563,7 @@ void RefMatchAudioProcessorEditor::paint(juce::Graphics& g)
     g.drawText("RefMatch",44,18,180,30,juce::Justification::left);
     g.setFont(juce::Font(juce::FontOptions(10.f)));g.setColour(muted);
     g.drawText("Match your sound.",44,48,180,16,juce::Justification::left);
-    g.drawText("v0.5.28    /    STREAM",744,24,150,20,juce::Justification::right);
+    g.drawText("v0.5.29    /    STREAM",744,24,150,20,juce::Justification::right);
 
     // Source cards
     const juce::Rectangle<float> mixCard(44,72,360,104), refCard(536,72,380,104);
@@ -641,8 +641,14 @@ void RefMatchAudioProcessorEditor::paint(juce::Graphics& g)
         const char* names[3]={"LOW","MID","HIGH"}; const char* ranges[3]={"30 - 300 Hz","200 Hz - 6 kHz","3 - 20 kHz"};
         for(int i=0;i<3;++i){const float x=60.f+i*286.f;const auto accent=i==0?cyan:(i==1?cyan.interpolatedWith(violet,.52f):violet);g.setColour(accent);g.fillEllipse(x,554,10,10);g.setFont(juce::Font(juce::FontOptions(10.5f,juce::Font::bold)));g.drawText(names[i],int(x+18),548,52,22,juce::Justification::left);g.setFont(juce::Font(juce::FontOptions(8.8f)));g.setColour(muted);g.drawText(ranges[i],int(x+70),550,98,18,juce::Justification::left);g.drawText("Gain",int(x),576,34,18,juce::Justification::left);g.drawText("Freq",int(x),600,34,18,juce::Justification::left);if(i<2){g.setColour(line.withAlpha(.45f));g.drawVerticalLine(int(x+272),552,614);}}
     } else {
-        g.setColour(violet);g.setFont(juce::Font(juce::FontOptions(10.f,juce::Font::bold)));g.drawText("LOOP VIEW",50,214,100,16,juce::Justification::left);
-        g.setColour(text);g.setFont(juce::Font(juce::FontOptions(14.f,juce::Font::bold)));g.drawText("LOOP REGION",50,230,150,22,juce::Justification::left);
+        // Keep navigation and loop enable/status visually separated: tabs on the
+        // left, loop enable control on the right, and the content title below.
+        g.setColour(muted);
+        g.setFont(juce::Font(juce::FontOptions(9.5f,juce::Font::bold)));
+        g.drawText("LOOP ENABLE",700,192,88,20,juce::Justification::centredRight);
+        g.setColour(text);
+        g.setFont(juce::Font(juce::FontOptions(14.f,juce::Font::bold)));
+        g.drawText("LOOP REGION",50,232,150,22,juce::Justification::left);
         const auto& lp=processor.getLoop(); const double length=std::max(0.0,lp.getOut()-lp.getIn()); const int ms=int(std::round(length*1000.));
         const juce::String len=juce::String(ms/60000)+":"+juce::String((ms%60000)/1000).paddedLeft('0',2)+"."+juce::String(ms%1000).paddedLeft('0',3);
         g.setFont(juce::Font(juce::FontOptions(10.f)));g.setColour(muted);g.drawText("ZOOM",52,452,60,20,juce::Justification::left);g.drawText("LOOP LENGTH",720,452,100,20,juce::Justification::right);
@@ -731,7 +737,11 @@ void RefMatchAudioProcessorEditor::resized()
 
     // Loop page
     if(page==2) {
-        eqTab.setBounds(44,184,128,36); loopTab.setBounds(180,184,104,36); quickLoop.setBounds(774,184,82,36);
+        eqTab.setBounds(44,184,128,36);
+        loopTab.setBounds(180,184,104,36);
+        // Dedicated enable area on the right keeps the ON/OFF toggle from
+        // feeling detached from the loop page.
+        quickLoop.setBounds(796,184,104,36);
     }
     timeline.setBounds(48,258,868,170); position.setBounds(50,432,260,20); clearLoop.setBounds(800,222,116,28);
     zoomMinus.setBounds(116,456,32,28); loopZoom.setBounds(154,456,146,28); zoomPlus.setBounds(306,456,32,28);
