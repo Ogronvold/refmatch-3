@@ -13,8 +13,9 @@ public:
     }
     void enable(bool value){enabled=value;restart();state=value?State::waiting:State::off;}
     void restart(){first=true;verifying=false;retryAt=0;}
-    void clear(){enabled=false;in=0;out=30;restart();state=State::off;}
+    void clear(){enabled=false;in=0;out=0;hasSelection=false;restart();state=State::off;}
     bool isEnabled() const{return enabled;}
+    bool hasRange() const{return hasSelection && out-in>=.5;}
     double getIn() const{return in;}
     double getOut() const{return out;}
     State getState() const{return state;}
@@ -48,7 +49,7 @@ public:
     }
     void manualSeek(){verifying=false;first=false;retryAt=0;state=enabled?State::waiting:State::off;}
 private:
-    bool enabled=false,first=true,verifying=false;
+    bool enabled=false,first=true,verifying=false,hasSelection=true;
     double in=0,out=30,seekAt=0,retryAt=0;
     State state=State::off;
 };

@@ -12,7 +12,7 @@ public:
         message="Loop points set";return true;
     }
     void enable(bool value){loop.enable(value);message=value?"LOOP WAITING - checking player":"Loop off";}
-    void clear(){loop.clear();message="Loop cleared";}
+    void clear(){loop.clear();message="Loop region cleared - drag on the timeline to create a new loop";}
     bool seek(double seconds) {
         if(!position.valid || !std::isfinite(seconds))return false;
         seconds=loop.manualTarget(seconds,position.duration);
@@ -21,6 +21,7 @@ public:
     }
     bool skip(double delta){return seek(position.seconds+delta);}
     bool isEnabled() const{return loop.isEnabled();}
+    bool hasRange() const{return loop.hasRange();}
     bool isActive() const{return loop.getState()==PersistentLoop::State::active;}
     void setAuditioning(bool value){auditioning=value;}
     double getIn() const{return loop.getIn();}

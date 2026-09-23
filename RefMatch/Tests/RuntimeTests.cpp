@@ -32,6 +32,9 @@ int main()
     check(!loop.setRange(50,49) && loop.isEnabled() && loop.getIn()==47,"invalid edit preserves enabled valid range");
     check(loop.manualTarget(100,200)<51 && loop.manualTarget(0,200)==47,"manual seek stays in the active region");
     loop.enable(false);check(!loop.isEnabled(),"explicit OFF clears loop");
+    loop.clear();check(!loop.isEnabled() && !loop.hasRange() && loop.getIn()==0 && loop.getOut()==0,"clear removes the loop region itself");
+    loop.enable(true);check(!loop.isEnabled(),"cleared loop cannot be re-enabled until a new range is selected");
+    check(loop.setRange(12,18) && loop.hasRange(),"new range can be created after clear");
     PlaybackFeedback feedback;
     feedback.report(0,100);feedback.request(true,200);
     check(feedback.state(200)==1,"play request changes displayed state immediately");

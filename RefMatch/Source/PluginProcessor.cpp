@@ -169,7 +169,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout RefMatchAudioProcessor::crea
         params.push_back(std::make_unique<juce::AudioParameterFloat>(id+"freq","Tone "+juce::String(i+1)+" Frequency",range,toneDefaults[i]));
     }
     params.push_back(std::make_unique<juce::AudioParameterBool>("tone0shelf","Low Shelf",true));
-    params.push_back(std::make_unique<juce::AudioParameterFloat>("tone1q","Mid Q",juce::NormalisableRange<float>(0.3f,4.0f,0.01f,0.45f),0.75f));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>("tone1q","Mid Q",juce::NormalisableRange<float>(0.5f,3.0f,0.01f,0.55f),0.75f));
     params.push_back(std::make_unique<juce::AudioParameterBool>("tone2shelf","High Shelf",true));
     params.push_back(std::make_unique<juce::AudioParameterBool>("toneenabled","Tone EQ Enabled",true));
     juce::NormalisableRange<float> lowRange(20.f,1000.f,0.1f);lowRange.setSkewForCentre(120.f);

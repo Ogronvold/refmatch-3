@@ -14,7 +14,10 @@ public:
     void update(double time,double length,double start,double end,bool active,bool valid,const juce::String& identity) {
         if(dragging && identity!=track)dragging=false;
         track=identity;if(!dragging || mode!=3)cursor=time;duration=length;enabled=active;available=valid && length>=.5;
-        if(!dragging){const auto range=LoopSelection::drag(start,end,length);in=range.start;out=range.end;}
+        if(!dragging){
+            if(end-start>=.5){const auto range=LoopSelection::drag(start,end,length);in=range.start;out=range.end;}
+            else {in=std::max(0.0,start);out=in;}
+        }
         repaint();
     }
 
@@ -31,6 +34,7 @@ public:
         if(duration>0) {
             const auto window=visibleWindow();
             const auto x=[&](double value){return r.getX()+float((value-window.first)/(window.second-window.first))*r.getWidth();};
+            const bool hasRange=(out-in)>=.5;
             const float left=std::clamp(x(in),r.getX(),r.getRight());
             const float right=std::clamp(x(out),r.getX(),r.getRight());
 
@@ -55,7 +59,7 @@ public:
                 g.drawLine(px,r.getCentreY()-a,px,r.getCentreY()+a,selected?1.35f:1.f);
             }
 
-            if(right>left) {
+            if(hasRange && right>left) {
                 g.setGradientFill(juce::ColourGradient(juce::Colour(0xffffad42).withAlpha(.12f),left,r.getCentreY(),juce::Colour(0xffa64df2).withAlpha(.22f),right,r.getCentreY(),false));
                 g.fillRect(juce::Rectangle<float>(left,r.getY(),right-left,r.getHeight()));
             }
@@ -66,7 +70,7 @@ public:
                 g.setColour(c);g.fillRoundedRectangle(xx-1.5f,r.getY()-7.f,3.f,r.getHeight()+14.f,1.5f);
                 g.fillEllipse(xx-6.f,r.getCentreY()-6.f,12.f,12.f);
             };
-            drawHandle(left,orange);drawHandle(right,purple);
+            if(hasRange){drawHandle(left,orange);drawHandle(right,purple);}
 
             if(cursor>=window.first && cursor<=window.second) {
                 const float cx=x(cursor);g.setColour(juce::Colours::white.withAlpha(.88f));g.fillRoundedRectangle(cx-.75f,r.getY()-3.f,1.5f,r.getHeight()+6.f,.75f);
