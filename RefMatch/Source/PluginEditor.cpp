@@ -133,13 +133,17 @@ void RefMatchLookAndFeel::drawButtonText(juce::Graphics& g,juce::TextButton& but
         const auto r=button.getLocalBounds().toFloat();
         const auto c=text.withAlpha(down?.68f:over?1.f:.90f);
         const float x=r.getX()+16.f, cy=r.getCentreY();
-        g.setColour(c.withAlpha(.72f));
-        // "restore controls" icon: three clean parameter rails with knobs.
-        for(int i=-1;i<=1;++i) g.drawLine(x-7.f,cy+i*5.f,x+7.f,cy+i*5.f,1.15f);
         g.setColour(c);
-        g.fillEllipse(x-4.2f,cy-6.9f,3.8f,3.8f);
-        g.fillEllipse(x+1.2f,cy-1.9f,3.8f,3.8f);
-        g.fillEllipse(x-1.2f,cy+3.1f,3.8f,3.8f);
+        // Simple circular reset arrow.
+        juce::Path arc;
+        arc.addCentredArc(x,cy,7.f,7.f,0.f,0.45f,juce::MathConstants<float>::twoPi-0.72f,true);
+        g.strokePath(arc,juce::PathStrokeType(1.5f,juce::PathStrokeType::curved,juce::PathStrokeType::rounded));
+        juce::Path head;
+        head.startNewSubPath(x-5.8f,cy-5.6f);
+        head.lineTo(x-9.0f,cy-5.0f);
+        head.lineTo(x-6.7f,cy-2.6f);
+        head.closeSubPath();
+        g.fillPath(head);
         g.setFont(juce::Font(juce::FontOptions(11.f,juce::Font::bold)));
         g.drawText(button.getButtonText(),juce::Rectangle<float>(x+13.f,r.getY(),r.getRight()-(x+16.f),r.getHeight()),juce::Justification::centredLeft);
         return;
@@ -573,7 +577,7 @@ void RefMatchAudioProcessorEditor::paint(juce::Graphics& g)
     g.drawText("RefMatch",44,18,180,30,juce::Justification::left);
     g.setFont(juce::Font(juce::FontOptions(10.f)));g.setColour(muted);
     g.drawText("Match your sound.",44,48,180,16,juce::Justification::left);
-    g.drawText("v0.5.30    /    STREAM",744,24,150,20,juce::Justification::right);
+    g.drawText("v0.5.31    /    STREAM",744,24,150,20,juce::Justification::right);
 
     // Source cards
     const juce::Rectangle<float> mixCard(44,72,360,104), refCard(536,72,380,104);
@@ -719,7 +723,7 @@ void RefMatchAudioProcessorEditor::updateMatchHandle(float x)
 void RefMatchAudioProcessorEditor::resized()
 {
     // Top source cards
-    a.setBounds(58,86,48,42); b.setBounds(554,86,48,42); switchButton.setBounds(447,78,66,66); matchState.setBounds(292,82,96,24);
+    a.setBounds(58,86,48,42); b.setBounds(554,86,48,42); switchButton.setBounds(437,78,66,66); matchState.setBounds(292,82,96,24);
     gain.setBounds(158,124,224,30);
     // Reference transport now occupies the former waveform row, directly under
     // title/artist, so the card reads as one compact player block.

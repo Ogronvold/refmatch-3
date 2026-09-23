@@ -1,4 +1,4 @@
-# RefMatch 0.5.30 — Expandable Loop View
+# RefMatch 0.5.31 — Switch Center + Reset Icon
 
 - LOOP now behaves like an expandable section beneath the normal action bar.
 - The main action row stays visible in Loop view, including MIX/REF capture, MATCH/MATCHED, RESET, Loop enable, and EQ state.
