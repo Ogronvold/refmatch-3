@@ -58,7 +58,7 @@ private:
     juce::TooltipWindow tips{this,650};
     juce::String message;
     int page=1;
-    bool showTone=false;
+    bool showTone=true;
     double matchFlashUntil=0.0;
     enum class MatchDrag { none, low, high } matchDrag=MatchDrag::none;
 };
