@@ -538,7 +538,7 @@ void RefMatchAudioProcessorEditor::paint(juce::Graphics& g)
     g.drawText("RefMatch",44,18,180,30,juce::Justification::left);
     g.setFont(juce::Font(juce::FontOptions(10.f)));g.setColour(muted);
     g.drawText("Match your sound.",44,48,180,16,juce::Justification::left);
-    g.drawText("v0.5.23    /    STREAM",744,24,150,20,juce::Justification::right);
+    g.drawText("v0.5.24    /    STREAM",744,24,150,20,juce::Justification::right);
 
     // Source cards
     const juce::Rectangle<float> mixCard(44,72,360,104), refCard(536,72,380,104);
@@ -550,6 +550,21 @@ void RefMatchAudioProcessorEditor::paint(juce::Graphics& g)
     g.drawText(juce::String(processor.getSourcePeakDb(),1)+" dB",116,108,85,16,juce::Justification::left);
     g.drawText("Gain",116,131,42,18,juce::Justification::left);
 
+    // Minimal live signal activity indicators. They are deliberately tiny: enough
+    // to confirm that audio is present without turning the source cards into meters.
+    auto drawSignalActivity=[&](float x,float y,float peakDb,juce::Colour accent) {
+        const float norm=juce::jlimit(0.0f,1.0f,(peakDb+54.0f)/54.0f);
+        constexpr int bars=4;
+        for(int i=0;i<bars;++i) {
+            const float threshold=(i+1)/float(bars);
+            const float activity=juce::jlimit(0.0f,1.0f,(norm-threshold+0.28f)/0.28f);
+            const float h=3.0f+float(i)*2.0f;
+            g.setColour(activity>0.02f?accent.withAlpha(0.18f+0.72f*activity):muted.withAlpha(0.16f));
+            g.fillRoundedRectangle(x+i*3.3f,y+(11.0f-h)*0.5f,1.7f,h,0.85f);
+        }
+    };
+    drawSignalActivity(205.f,110.f,processor.getSourcePeakDb(),cyan);
+
     const auto media=processor.getLoop().getPosition();
     const juce::Rectangle<float> cover(622,86,44,44);
     if(media.artwork.isValid())g.drawImageWithin(media.artwork,622,86,44,44,juce::RectanglePlacement::centred);
@@ -558,9 +573,10 @@ void RefMatchAudioProcessorEditor::paint(juce::Graphics& g)
     g.drawText(media.title.isNotEmpty()?media.title:"REFERENCE",678,88,118,18,juce::Justification::left);
     g.setFont(juce::Font(juce::FontOptions(10.f)));g.setColour(text.withAlpha(.82f));
     g.drawText(media.artist,678,109,118,16,juce::Justification::left);
-    // tiny decorative player waveform like the reference design
+    // Compact player waveform. Keep it clear of the transport controls below/right.
     g.setColour(violet.withAlpha(.18f));
-    for(int i=0;i<44;++i){float h=2.f+6.f*std::abs(std::sin(i*.47f)+.35f*std::sin(i*1.37f));g.fillRoundedRectangle(678.f+i*2.25f,135.f-h*.5f,1.3f,h,.65f);}
+    for(int i=0;i<27;++i){float h=2.f+6.f*std::abs(std::sin(i*.47f)+.35f*std::sin(i*1.37f));g.fillRoundedRectangle(678.f+i*2.25f,135.f-h*.5f,1.3f,h,.65f);}
+    drawSignalActivity(804.f,111.f,processor.getReferencePeakDb(),violet);
 
     if(page==1) {
         // Main graph card
@@ -655,7 +671,9 @@ void RefMatchAudioProcessorEditor::resized()
 {
     // Top source cards
     a.setBounds(58,86,48,42); b.setBounds(554,86,48,42); switchButton.setBounds(447,78,66,66); matchState.setBounds(292,82,96,24);
-    gain.setBounds(158,124,224,30); back.setBounds(722,130,50,30); play.setBounds(780,130,74,30); forward.setBounds(862,130,50,30);
+    gain.setBounds(158,124,224,30);
+    // Transport lives on its own baseline, to the right of the mini waveform.
+    back.setBounds(744,137,50,30); play.setBounds(802,137,66,30); forward.setBounds(876,137,40,30);
 
     // Main action row: all labels fit at the native 960 px width.
     recordMix.setBounds(44,184,166,38); recordRef.setBounds(222,184,166,38); match.setBounds(400,184,174,38); reset.setBounds(586,184,104,38);
