@@ -467,11 +467,11 @@ void RefMatchAudioProcessorEditor::drawSpectrum(juce::Graphics& g,juce::Rectangl
         const auto hzText=[](float hz){return hz>=1000.f?juce::String(hz/1000.f,hz<10000?1:0)+"k":juce::String(int(hz));};
         g.drawText("LOW "+hzText(low)+" Hz",juce::Rectangle<float>(lx+5,plot.getY(),76,14),juce::Justification::left);
         g.drawText("HIGH "+hzText(high)+" Hz",juce::Rectangle<float>(hx-82,plot.getY(),78,14),juce::Justification::right);
-        g.setFont(juce::Font(juce::FontOptions(10)));g.setColour(muted);
-        // Keep the graph legend clearly above the plotted response so it never
-        // sits on top of the low-frequency curve/handle labels.
-        auto legend=r.reduced(12);legend.setY(r.getY()+4);legend.setHeight(12);
-        g.drawText(juce::String("+/- ")+juce::String(scale,0)+" dB   "+(eqOn.getToggleState()?"APPLIED (COLOUR) / 100% TARGET (PURPLE)":"EQ BYPASSED / STORED CURVE")+(outside?"  (choose wider range)":""),legend,juce::Justification::left);
+        g.setFont(juce::Font(juce::FontOptions(8.5f)));g.setColour(muted.withAlpha(.88f));
+        g.drawText("+"+juce::String(scale,0),juce::Rectangle<float>(r.getX()+3.f,plot.getY()-3.f,30.f,14.f),juce::Justification::left);
+        g.drawText("0",juce::Rectangle<float>(r.getX()+3.f,plot.getCentreY()-7.f,24.f,14.f),juce::Justification::left);
+        g.drawText("-"+juce::String(scale,0),juce::Rectangle<float>(r.getX()+3.f,plot.getBottom()-10.f,30.f,14.f),juce::Justification::left);
+        if(outside){g.setColour(cyan.withAlpha(.78f));g.drawText("wider range available",juce::Rectangle<float>(r.getRight()-126.f,r.getY()+4.f,116.f,12.f),juce::Justification::right);}
     }else{
         for(int side=0;side<2;++side){auto values=side?processor.getReferenceSpectrum():processor.getSourceSpectrum();juce::Path path;
             for(int i=0;i<180;++i){const double hz=20*std::pow(1000.,i/179.);const int index=std::clamp(int(hz*SpectrumAnalyser::fftSize/processor.getSampleRateForDisplay()),1,SpectrumAnalyser::bins-1);const float x=plot.getX()+i/179.f*plot.getWidth(),y=plot.getBottom()-std::clamp((values[index]+100)/100.f,0.f,1.f)*plot.getHeight();if(!i)path.startNewSubPath(x,y);else path.lineTo(x,y);}
@@ -494,10 +494,10 @@ void RefMatchAudioProcessorEditor::paint(juce::Graphics& g)
     g.drawText("RefMatch",44,18,180,30,juce::Justification::left);
     g.setFont(juce::Font(juce::FontOptions(10.f)));g.setColour(muted);
     g.drawText("Match your sound.",44,48,180,16,juce::Justification::left);
-    g.drawText("v0.5.19    /    STREAM",744,24,150,20,juce::Justification::right);
+    g.drawText("v0.5.20    /    STREAM",744,24,150,20,juce::Justification::right);
 
     // Source cards
-    const juce::Rectangle<float> mixCard(44,72,360,104), refCard(542,72,374,104);
+    const juce::Rectangle<float> mixCard(44,72,360,104), refCard(536,72,380,104);
     panelCard(g,mixCard,cyan,!processor.isReferenceSelected());
     panelCard(g,refCard,violet,processor.isReferenceSelected());
     g.setColour(text);g.setFont(juce::Font(juce::FontOptions(13.f,juce::Font::bold)));
@@ -507,16 +507,16 @@ void RefMatchAudioProcessorEditor::paint(juce::Graphics& g)
     g.drawText("Gain",116,131,42,18,juce::Justification::left);
 
     const auto media=processor.getLoop().getPosition();
-    const juce::Rectangle<float> cover(628,86,44,44);
-    if(media.artwork.isValid())g.drawImageWithin(media.artwork,628,86,44,44,juce::RectanglePlacement::centred);
-    else {g.setColour(line);g.fillRoundedRectangle(cover,5.f);g.setColour(violet.withAlpha(.8f));g.fillEllipse(642,100,16,16);}
+    const juce::Rectangle<float> cover(622,86,44,44);
+    if(media.artwork.isValid())g.drawImageWithin(media.artwork,622,86,44,44,juce::RectanglePlacement::centred);
+    else {g.setColour(line);g.fillRoundedRectangle(cover,5.f);g.setColour(violet.withAlpha(.8f));g.fillEllipse(636,100,16,16);}
     g.setColour(text);g.setFont(juce::Font(juce::FontOptions(11.5f,juce::Font::bold)));
-    g.drawText(media.title.isNotEmpty()?media.title:"REFERENCE",684,88,160,18,juce::Justification::left);
+    g.drawText(media.title.isNotEmpty()?media.title:"REFERENCE",678,88,118,18,juce::Justification::left);
     g.setFont(juce::Font(juce::FontOptions(10.f)));g.setColour(text.withAlpha(.82f));
-    g.drawText(media.artist,684,109,160,16,juce::Justification::left);
+    g.drawText(media.artist,678,109,118,16,juce::Justification::left);
     // tiny decorative player waveform like the reference design
     g.setColour(violet.withAlpha(.18f));
-    for(int i=0;i<50;++i){float h=2.f+6.f*std::abs(std::sin(i*.47f)+.35f*std::sin(i*1.37f));g.fillRoundedRectangle(684.f+i*2.4f,135.f-h*.5f,1.4f,h,.7f);}
+    for(int i=0;i<44;++i){float h=2.f+6.f*std::abs(std::sin(i*.47f)+.35f*std::sin(i*1.37f));g.fillRoundedRectangle(678.f+i*2.25f,135.f-h*.5f,1.3f,h,.65f);}
 
     if(page==1) {
         // Main graph card
@@ -526,30 +526,24 @@ void RefMatchAudioProcessorEditor::paint(juce::Graphics& g)
         g.setColour(text);g.setFont(juce::Font(juce::FontOptions(13.f,juce::Font::bold)));g.drawText("MATCH EQ",58,260,120,20,juce::Justification::left);
         // legend
         auto dot=[&](float x,juce::Colour c,const juce::String& t){g.setColour(c);g.fillEllipse(x,269,7,7);g.setColour(text.withAlpha(.76f));g.setFont(juce::Font(juce::FontOptions(9.f)));g.drawText(t,int(x+14),263,96,18,juce::Justification::left);};
-        dot(412,cyan,"Your Mix");dot(505,violet,"Reference");dot(606,juce::Colour(0xffffb5ff),"Matched (Applied)");
+        dot(386,cyan,"Your Mix");dot(480,violet,"Reference");dot(581,juce::Colour(0xffffb5ff),"Matched (Applied)");
+        g.setFont(juce::Font(juce::FontOptions(9.f)));g.setColour(muted);g.drawText("View: Applied",724,263,78,18,juce::Justification::right);
         drawSpectrum(g,{58,282,844,150},true);
         const float low=processor.apvts.getRawParameterValue("matchlow")->load();
         const float high=processor.apvts.getRawParameterValue("matchhigh")->load();
-        g.setFont(juce::Font(juce::FontOptions(9.f)));g.setColour(muted);
-        g.drawText("20 Hz",58,435,50,18,juce::Justification::left);g.drawText("50 Hz",162,435,48,18,juce::Justification::centred);
-        g.drawText("100 Hz",238,435,55,18,juce::Justification::centred);g.drawText("200 Hz",316,435,55,18,juce::Justification::centred);
-        g.drawText("500 Hz",410,435,55,18,juce::Justification::centred);g.drawText("1 kHz",500,435,50,18,juce::Justification::centred);
-        g.drawText("2 kHz",578,435,50,18,juce::Justification::centred);g.drawText("5 kHz",673,435,50,18,juce::Justification::centred);
-        g.drawText("10 kHz",760,435,58,18,juce::Justification::centred);g.drawText("20 kHz",844,435,58,18,juce::Justification::right);
         // controls row inside graph card
-        g.setColour(muted);g.setFont(juce::Font(juce::FontOptions(10.f)));g.drawText("Amount",58,459,58,20,juce::Justification::left);g.drawText("Smooth",430,459,58,20,juce::Justification::left);
-        g.drawText("Target Range",706,459,82,20,juce::Justification::left);
-        auto smallBox=[&](float x,const juce::String& t){g.setColour(panel);g.fillRoundedRectangle(x,457,58,24,5);g.setColour(line);g.drawRoundedRectangle(x,457,58,24,5,1);g.setColour(text.withAlpha(.86f));g.setFont(juce::Font(juce::FontOptions(9.f)));g.drawText(t,int(x),457,58,24,juce::Justification::centred);};
-        smallBox(788,low<1000?juce::String(int(std::round(low)))+" Hz":juce::String(low/1000.f,1)+" kHz");
-        g.setColour(muted);g.drawText("-",848,457,18,24,juce::Justification::centred);
-        smallBox(862,high<1000?juce::String(int(std::round(high)))+" Hz":juce::String(high/1000.f,high>=10000?0:1)+" kHz");
+        g.setColour(muted);g.setFont(juce::Font(juce::FontOptions(10.f)));g.drawText("Amount",58,453,58,20,juce::Justification::left);g.drawText("Smooth",430,453,58,20,juce::Justification::left);
+        g.drawText("Target Range",700,453,82,20,juce::Justification::left);
+        auto smallBox=[&](float x,const juce::String& t){g.setColour(panel);g.fillRoundedRectangle(x,451,62,24,5);g.setColour(line);g.drawRoundedRectangle(x,451,62,24,5,1);g.setColour(text.withAlpha(.86f));g.setFont(juce::Font(juce::FontOptions(9.f)));g.drawText(t,int(x),451,62,24,juce::Justification::centred);};
+        smallBox(780,low<1000?juce::String(int(std::round(low)))+" Hz":juce::String(low/1000.f,1)+" kHz");
+        g.setColour(muted);g.drawText("-",843,451,16,24,juce::Justification::centred);
+        smallBox(856,high<1000?juce::String(int(std::round(high)))+" Hz":juce::String(high/1000.f,high>=10000?0:1)+" kHz");
 
         // Tone EQ section, deliberately flatter and cleaner than the old cards.
         const juce::Rectangle<float> toneCard(44,508,872,112);
         g.setGradientFill(juce::ColourGradient(panelRaised.withAlpha(.93f),toneCard.getTopLeft(),panel.darker(.20f),toneCard.getBottomRight(),false));g.fillRoundedRectangle(toneCard,11.f);
-        g.setColour(line.withAlpha(.78f));g.drawRoundedRectangle(toneCard,11.f,1.f);g.drawHorizontalLine(542,58,902);
+        g.setColour(line.withAlpha(.78f));g.drawRoundedRectangle(toneCard,11.f,1.f);g.drawHorizontalLine(543,58,902);
         g.setColour(text);g.setFont(juce::Font(juce::FontOptions(12.5f,juce::Font::bold)));g.drawText("TONE EQ",60,517,86,20,juce::Justification::left);
-        g.setFont(juce::Font(juce::FontOptions(9.f)));g.setColour(muted);g.drawText("Reset All",846,517,56,20,juce::Justification::right);
         const char* names[3]={"LOW","MID","HIGH"}; const char* ranges[3]={"30 - 300 Hz","200 Hz - 6 kHz","3 - 20 kHz"};
         for(int i=0;i<3;++i){const float x=60.f+i*286.f;const auto accent=i==0?cyan:violet;g.setColour(accent);g.fillEllipse(x,554,10,10);g.setFont(juce::Font(juce::FontOptions(10.5f,juce::Font::bold)));g.drawText(names[i],int(x+18),548,52,22,juce::Justification::left);g.setFont(juce::Font(juce::FontOptions(8.8f)));g.setColour(muted);g.drawText(ranges[i],int(x+70),550,98,18,juce::Justification::left);g.drawText("Gain",int(x),576,34,18,juce::Justification::left);g.drawText("Freq",int(x),600,34,18,juce::Justification::left);if(i<2){g.setColour(line.withAlpha(.45f));g.drawVerticalLine(int(x+272),552,614);}}
     } else {
@@ -608,24 +602,24 @@ void RefMatchAudioProcessorEditor::updateMatchHandle(float x)
 void RefMatchAudioProcessorEditor::resized()
 {
     // Top source cards
-    a.setBounds(58,86,48,42); b.setBounds(560,86,48,42); switchButton.setBounds(438,78,66,66); matchState.setBounds(294,82,94,24);
-    gain.setBounds(158,124,224,30); back.setBounds(780,132,48,28); play.setBounds(834,132,44,28); forward.setBounds(884,132,44,28);
+    a.setBounds(58,86,48,42); b.setBounds(554,86,48,42); switchButton.setBounds(447,78,66,66); matchState.setBounds(292,82,96,24);
+    gain.setBounds(158,124,224,30); back.setBounds(772,132,44,28); play.setBounds(820,132,54,28); forward.setBounds(878,132,38,28);
 
-    // Main action row mirrors the supplied visual reference.
-    recordMix.setBounds(44,184,170,38); recordRef.setBounds(228,184,170,38); match.setBounds(414,184,170,38); reset.setBounds(596,184,108,38);
-    loopTab.setBounds(716,184,64,38); quickLoop.setBounds(778,184,78,38); eqOn.setBounds(866,184,76,38);
-    mixProfile.setBounds(62,219,150,18); refProfile.setBounds(246,219,150,18);
+    // Main action row: all labels fit at the native 960 px width.
+    recordMix.setBounds(44,184,166,38); recordRef.setBounds(222,184,166,38); match.setBounds(400,184,174,38); reset.setBounds(586,184,96,38);
+    loopTab.setBounds(694,184,70,38); quickLoop.setBounds(766,184,82,38); eqOn.setBounds(852,184,90,38);
+    mixProfile.setBounds(62,219,146,18); refProfile.setBounds(240,219,146,18);
     eqTab.setBounds(44,184,120,36);
 
     // Graph controls
-    amount.setBounds(118,452,278,34); smooth.setBounds(488,452,208,34); graphRange.setBounds(822,254,80,24);
+    amount.setBounds(118,446,278,34); smooth.setBounds(488,446,202,34); graphRange.setBounds(804,254,98,24);
 
     // Tone EQ
-    toneButton.setBounds(60,514,92,24); toneOn.setBounds(150,514,76,24); toneReset.setButtonText("Reset All"); toneReset.setBounds(838,514,64,24);
-    tone[0].setBounds(98,572,180,24); tone[1].setBounds(98,596,180,24);
-    tone[2].setBounds(384,572,180,24); tone[3].setBounds(384,596,180,24);
-    tone[4].setBounds(670,572,180,24); tone[5].setBounds(670,596,180,24);
-    lowType.setBounds(242,548,82,20); midQ.setBounds(518,546,104,24); highType.setBounds(812,548,82,20);
+    toneButton.setBounds(60,514,94,24); toneOn.setBounds(162,514,104,24); toneReset.setButtonText("Reset All"); toneReset.setBounds(824,514,78,24);
+    tone[0].setBounds(98,572,176,24); tone[1].setBounds(98,596,176,24);
+    tone[2].setBounds(384,572,176,24); tone[3].setBounds(384,596,176,24);
+    tone[4].setBounds(670,572,176,24); tone[5].setBounds(670,596,176,24);
+    lowType.setBounds(238,548,78,20); midQ.setBounds(520,546,98,24); highType.setBounds(808,548,78,20);
 
     // Loop page
     timeline.setBounds(48,250,868,170); position.setBounds(50,424,260,20); clearLoop.setBounds(800,214,116,28);

@@ -1,5 +1,3 @@
-# RefMatch 0.5.19 — Reference-layout redesign
+# RefMatch 0.5.20 — Reference layout polish
 
-This version keeps the 0.5.18 DSP/loop/match-range behaviour and rebuilds the main interface around the supplied reference design: wider source cards, circular switch, one compact action row, a single large Match EQ analyser, integrated Amount/Smooth/Target Range controls, and a flatter three-column Tone EQ.
-
-The dedicated LOOP page and all existing matching/loop functions are retained.
+UI-only polish pass on 0.5.19. Fixes clipped controls and spacing in the top action/player row, widens the graph-range selector, removes the duplicated frequency-label row, simplifies graph annotations, and cleans up the Tone EQ header so the interface tracks the supplied reference mockup more closely. DSP and matching behaviour are unchanged from 0.5.19.
