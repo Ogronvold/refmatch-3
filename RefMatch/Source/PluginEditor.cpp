@@ -228,7 +228,10 @@ RefMatchAudioProcessorEditor::RefMatchAudioProcessorEditor(RefMatchAudioProcesso
             else {quickLoop.setToggleState(false,juce::dontSendNotification);message="Set a loop range once in LOOP first";}
         } else processor.getLoop().enable(false);
     };
-    eqTab.onClick=[this]{setPage(1);};loopTab.onClick=[this]{setPage(2);};
+    eqTab.onClick=[this]{setPage(1);};
+    // LOOP behaves like an expandable view: the main action bar stays in place,
+    // and the LOOP button itself shows the active state while the loop editor is open.
+    loopTab.onClick=[this]{setPage(page==2?1:2);};
     play.onClick=[this]{
         if(!processor.isReferenceSelected())processor.selectSource(true);
         else transport(processor.getMediaController().playbackState()==1?SystemMediaController::Command::pause:SystemMediaController::Command::play);
@@ -347,17 +350,24 @@ void RefMatchAudioProcessorEditor::setPage(int value)
 {
     page=value;
     const bool main=page==1;
-    for(auto* c:std::initializer_list<juce::Component*>{&recordMix,&recordRef,&match,&reset,&eqOn,&amount,&smooth,&toneOn,&graphRange,&mixProfile,&refProfile,&toneReset,&lowType,&highType,&midQ})c->setVisible(main);
+
+    // Keep the full action bar visible in both views. Opening LOOP should feel
+    // like the section expands below the toolbar, not like navigating away to
+    // a different toolbar. This also keeps MATCHED / capture state visible.
+    for(auto* c:std::initializer_list<juce::Component*>{&recordMix,&recordRef,&match,&reset,&eqOn,&mixProfile,&refProfile})c->setVisible(true);
+    for(auto* c:std::initializer_list<juce::Component*>{&amount,&smooth,&toneOn,&graphRange,&toneReset,&lowType,&highType,&midQ})c->setVisible(main);
     toneButton.setVisible(false);
     for(auto& control:tone)control.setVisible(main);
+
     for(auto* c:std::initializer_list<juce::Component*>{&timeline,&position,&clearLoop,&zoomMinus,&zoomPlus,&loopZoom})c->setVisible(page==2);
     for(auto* c:std::initializer_list<juce::Component*>{&inTime,&outTime,&setIn,&setOut})c->setVisible(false);
-    // On the loop page, show the tabs together so it is obvious how to return.
-    eqTab.setButtonText(page==2?"<  MATCH EQ":"MATCH EQ");
+
+    eqTab.setVisible(false);
     loopTab.setButtonText("LOOP");
-    eqTab.setVisible(page==2);
     loopTab.setVisible(true);
     quickLoop.setVisible(true);
+    eqOn.setVisible(true);
+
     setSize(960,page==1?650:560);
     resized();repaint();
 }
@@ -563,7 +573,7 @@ void RefMatchAudioProcessorEditor::paint(juce::Graphics& g)
     g.drawText("RefMatch",44,18,180,30,juce::Justification::left);
     g.setFont(juce::Font(juce::FontOptions(10.f)));g.setColour(muted);
     g.drawText("Match your sound.",44,48,180,16,juce::Justification::left);
-    g.drawText("v0.5.29    /    STREAM",744,24,150,20,juce::Justification::right);
+    g.drawText("v0.5.30    /    STREAM",744,24,150,20,juce::Justification::right);
 
     // Source cards
     const juce::Rectangle<float> mixCard(44,72,360,104), refCard(536,72,380,104);
@@ -641,11 +651,9 @@ void RefMatchAudioProcessorEditor::paint(juce::Graphics& g)
         const char* names[3]={"LOW","MID","HIGH"}; const char* ranges[3]={"30 - 300 Hz","200 Hz - 6 kHz","3 - 20 kHz"};
         for(int i=0;i<3;++i){const float x=60.f+i*286.f;const auto accent=i==0?cyan:(i==1?cyan.interpolatedWith(violet,.52f):violet);g.setColour(accent);g.fillEllipse(x,554,10,10);g.setFont(juce::Font(juce::FontOptions(10.5f,juce::Font::bold)));g.drawText(names[i],int(x+18),548,52,22,juce::Justification::left);g.setFont(juce::Font(juce::FontOptions(8.8f)));g.setColour(muted);g.drawText(ranges[i],int(x+70),550,98,18,juce::Justification::left);g.drawText("Gain",int(x),576,34,18,juce::Justification::left);g.drawText("Freq",int(x),600,34,18,juce::Justification::left);if(i<2){g.setColour(line.withAlpha(.45f));g.drawVerticalLine(int(x+272),552,614);}}
     } else {
-        // Keep navigation and loop enable/status visually separated: tabs on the
-        // left, loop enable control on the right, and the content title below.
-        g.setColour(muted);
-        g.setFont(juce::Font(juce::FontOptions(9.5f,juce::Font::bold)));
-        g.drawText("LOOP ENABLE",700,192,88,20,juce::Justification::centredRight);
+        // LOOP opens beneath the unchanged main toolbar. The highlighted LOOP
+        // button above is the view indicator, so the editor only needs a clean
+        // section title here.
         g.setColour(text);
         g.setFont(juce::Font(juce::FontOptions(14.f,juce::Font::bold)));
         g.drawText("LOOP REGION",50,232,150,22,juce::Justification::left);
@@ -735,14 +743,8 @@ void RefMatchAudioProcessorEditor::resized()
     tone[4].setBounds(670,572,176,24); tone[5].setBounds(670,596,176,24);
     lowType.setBounds(238,548,78,20); midQ.setBounds(508,546,126,24); highType.setBounds(808,548,78,20);
 
-    // Loop page
-    if(page==2) {
-        eqTab.setBounds(44,184,128,36);
-        loopTab.setBounds(180,184,104,36);
-        // Dedicated enable area on the right keeps the ON/OFF toggle from
-        // feeling detached from the loop page.
-        quickLoop.setBounds(796,184,104,36);
-    }
+    // Loop page uses the exact same toolbar geometry as the main page.
+    // The LOOP button is highlighted via its toggle state while the section is open.
     timeline.setBounds(48,258,868,170); position.setBounds(50,432,260,20); clearLoop.setBounds(800,222,116,28);
     zoomMinus.setBounds(116,456,32,28); loopZoom.setBounds(154,456,146,28); zoomPlus.setBounds(306,456,32,28);
     inTime.setBounds(0,0,0,0);setIn.setBounds(0,0,0,0);outTime.setBounds(0,0,0,0);setOut.setBounds(0,0,0,0);
