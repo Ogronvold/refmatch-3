@@ -563,7 +563,7 @@ void RefMatchAudioProcessorEditor::paint(juce::Graphics& g)
     g.drawText("RefMatch",44,18,180,30,juce::Justification::left);
     g.setFont(juce::Font(juce::FontOptions(10.f)));g.setColour(muted);
     g.drawText("Match your sound.",44,48,180,16,juce::Justification::left);
-    g.drawText("v0.5.26    /    STREAM",744,24,150,20,juce::Justification::right);
+    g.drawText("v0.5.27    /    STREAM",744,24,150,20,juce::Justification::right);
 
     // Source cards
     const juce::Rectangle<float> mixCard(44,72,360,104), refCard(536,72,380,104);
@@ -594,18 +594,28 @@ void RefMatchAudioProcessorEditor::paint(juce::Graphics& g)
     // Compact reference player layout: source badge, artwork + metadata on the
     // left, a short decorative waveform below, and transport grouped cleanly
     // on the right (matching the visual reference).
-    const juce::Rectangle<float> cover(622,84,46,46);
-    if(media.artwork.isValid())g.drawImageWithin(media.artwork,622,84,46,46,juce::RectanglePlacement::centred);
-    else {g.setColour(line);g.fillRoundedRectangle(cover,5.f);g.setColour(violet.withAlpha(.8f));g.fillEllipse(637,99,16,16);}
-    g.setColour(text);g.setFont(juce::Font(juce::FontOptions(11.7f,juce::Font::bold)));
-    g.drawText(media.title.isNotEmpty()?media.title:"REFERENCE",680,86,112,18,juce::Justification::left);
-    g.setFont(juce::Font(juce::FontOptions(10.f)));g.setColour(text.withAlpha(.82f));
-    g.drawText(media.artist,680,108,112,16,juce::Justification::left);
-    // Short mini-waveform under the metadata, deliberately ending before the
-    // transport buttons so the two elements never overlap visually.
+    const juce::Rectangle<float> cover(620,84,46,46);
+    if(media.artwork.isValid())g.drawImageWithin(media.artwork,620,84,46,46,juce::RectanglePlacement::centred);
+    else {g.setColour(line);g.fillRoundedRectangle(cover,5.f);g.setColour(violet.withAlpha(.8f));g.fillEllipse(635,99,16,16);}
+
+    // Reference metadata follows the compact player composition used in the
+    // visual target: artwork, two clean text lines, then a short waveform.
+    g.setColour(text);g.setFont(juce::Font(juce::FontOptions(11.5f,juce::Font::bold)));
+    g.drawText(media.title.isNotEmpty()?media.title:"REFERENCE",678,86,106,18,juce::Justification::left);
+    g.setFont(juce::Font(juce::FontOptions(9.8f)));g.setColour(text.withAlpha(.78f));
+    g.drawText(media.artist,678,106,106,16,juce::Justification::left);
+
+    // Decorative mini-waveform. Keep a deliberate gap before transport so the
+    // player always reads as metadata -> waveform -> controls.
     g.setColour(violet.withAlpha(.18f));
-    for(int i=0;i<29;++i){float h=2.f+6.f*std::abs(std::sin(i*.47f)+.35f*std::sin(i*1.37f));g.fillRoundedRectangle(680.f+i*2.5f,136.f-h*.5f,1.4f,h,.7f);}
-    drawSignalActivity(607.f,111.f,processor.getReferencePeakDb(),violet);
+    for(int i=0;i<41;++i){
+        const float h=2.f+5.6f*std::abs(std::sin(i*.47f)+.35f*std::sin(i*1.37f));
+        g.fillRoundedRectangle(678.f+i*2.45f,139.f-h*.5f,1.35f,h,.7f);
+    }
+
+    // Tiny reference activity meter, tucked next to the metadata instead of
+    // sitting between the B badge and artwork.
+    drawSignalActivity(786.f,106.f,processor.getReferencePeakDb(),violet);
 
     if(page==1) {
         // Main graph card
@@ -701,9 +711,11 @@ void RefMatchAudioProcessorEditor::resized()
     // Top source cards
     a.setBounds(58,86,48,42); b.setBounds(554,86,48,42); switchButton.setBounds(447,78,66,66); matchState.setBounds(292,82,96,24);
     gain.setBounds(158,124,224,30);
-    // Compact reference transport, visually grouped like the supplied reference:
-    // -5 s, icon-only play/pause, +5 s. It sits to the right of the mini-waveform.
-    back.setBounds(756,124,48,32); play.setBounds(814,124,40,32); forward.setBounds(864,124,48,32);
+    // Compact reference transport: three equal-height controls aligned on one
+    // baseline, with breathing room after the waveform.
+    back.setBounds(790,122,40,30);
+    play.setBounds(837,122,34,30);
+    forward.setBounds(878,122,40,30);
 
     // Main action row: all labels fit at the native 960 px width.
     recordMix.setBounds(44,184,166,38); recordRef.setBounds(222,184,166,38); match.setBounds(400,184,174,38); reset.setBounds(586,184,104,38);
