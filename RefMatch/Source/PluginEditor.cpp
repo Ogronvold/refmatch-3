@@ -169,6 +169,17 @@ void RefMatchLookAndFeel::drawButtonText(juce::Graphics& g,juce::TextButton& but
         }
         return;
     }
+    if(bool(button.getProperties()["closeLoopIcon"])) {
+        const auto r=button.getLocalBounds().toFloat();
+        const auto c=text.withAlpha(down?.68f:over?1.f:.94f);
+        const float cx=r.getX()+18.f, cy=r.getCentreY();
+        g.setColour(c);
+        g.drawLine(cx-5.f,cy-5.f,cx+5.f,cy+5.f,1.6f);
+        g.drawLine(cx+5.f,cy-5.f,cx-5.f,cy+5.f,1.6f);
+        g.setFont(juce::Font(juce::FontOptions(11.f,juce::Font::bold)));
+        g.drawText(button.getButtonText(),juce::Rectangle<float>(cx+13.f,r.getY(),r.getRight()-(cx+16.f),r.getHeight()),juce::Justification::centredLeft);
+        return;
+    }
     if(bool(button.getProperties()["recordIcon"])) {
         const auto r=button.getLocalBounds().toFloat();
         const bool on=button.getToggleState();
@@ -367,7 +378,8 @@ void RefMatchAudioProcessorEditor::setPage(int value)
     for(auto* c:std::initializer_list<juce::Component*>{&inTime,&outTime,&setIn,&setOut})c->setVisible(false);
 
     eqTab.setVisible(false);
-    loopTab.setButtonText("LOOP");
+    loopTab.setButtonText(page==2?"CLOSE LOOP":"LOOP");
+    loopTab.getProperties().set("closeLoopIcon",page==2);
     loopTab.setVisible(true);
     quickLoop.setVisible(true);
     eqOn.setVisible(true);
@@ -506,13 +518,37 @@ void RefMatchAudioProcessorEditor::drawSpectrum(juce::Graphics& g,juce::Rectangl
                     const float y=plot.getBottom()-norm*plot.getHeight();
                     if(i==0)spectrum.startNewSubPath(x,y);else spectrum.lineTo(x,y);
                 }
-                const auto specColour=side?violet:cyan;
+                const auto specColour=side?cyan.interpolatedWith(violet,.38f):cyan;
                 auto specFill=spectrum;specFill.lineTo(plot.getRight(),plot.getBottom());specFill.lineTo(plot.getX(),plot.getBottom());specFill.closeSubPath();
-                g.setColour(specColour.withAlpha(side?.028f:.022f));g.fillPath(specFill);
-                g.setColour(specColour.withAlpha(side?.25f:.16f));
-                g.strokePath(spectrum,juce::PathStrokeType(side?1.1f:.9f,juce::PathStrokeType::curved,juce::PathStrokeType::rounded));
+                g.setColour(specColour.withAlpha(side?.035f:.045f));g.fillPath(specFill);
+                g.setColour(specColour.withAlpha(side?.28f:.58f));
+                g.strokePath(spectrum,juce::PathStrokeType(side?1.15f:1.35f,juce::PathStrokeType::curved,juce::PathStrokeType::rounded));
             }
         }
+        // While recording, overlay the cumulative learned profile. Because LearnCapture
+        // averages every FFT frame, this line gradually settles and effectively
+        // "freezes" into the spectral shape the matcher has understood so far.
+        const auto activeCapture=processor.recording();
+        if(activeCapture!=LearnCapture::none) {
+            const auto learned=processor.profile(activeCapture);
+            if(learned.seconds>0.0) {
+                juce::Path learnedPath;
+                for(int i=0;i<180;++i) {
+                    const double hz=20*std::pow(1000.,i/179.);
+                    const int index=std::clamp(int(hz*SpectrumAnalyser::fftSize/std::max(1.0,learned.sampleRate)),1,SpectrumAnalyser::bins-1);
+                    const float x=plot.getX()+i/179.f*plot.getWidth();
+                    const float norm=std::clamp((learned.db[index]+90.f)/80.f,0.f,1.f);
+                    const float y=plot.getBottom()-norm*plot.getHeight();
+                    if(i==0)learnedPath.startNewSubPath(x,y);else learnedPath.lineTo(x,y);
+                }
+                const auto c=activeCapture==LearnCapture::mix?cyan:violet;
+                g.setColour(c.withAlpha(.10f));
+                g.strokePath(learnedPath,juce::PathStrokeType(6.f,juce::PathStrokeType::curved,juce::PathStrokeType::rounded));
+                g.setColour(c.withAlpha(.88f));
+                g.strokePath(learnedPath,juce::PathStrokeType(1.8f,juce::PathStrokeType::curved,juce::PathStrokeType::rounded));
+            }
+        }
+
         const auto curve=processor.getMatchCurveDb();
         const auto fullCurve=processor.getMatchCurveDbAtAmount(1.0f);
         const float scale=graphScale;bool outside=false;for(auto db:curve)outside=outside || std::abs(db)>scale;
@@ -598,17 +634,17 @@ void RefMatchAudioProcessorEditor::paint(juce::Graphics& g)
     g.drawText("RefMatch",44,18,180,30,juce::Justification::left);
     g.setFont(juce::Font(juce::FontOptions(10.f)));g.setColour(muted);
     g.drawText("Match your sound.",44,48,180,16,juce::Justification::left);
-    g.drawText("v0.5.32    /    STREAM",744,24,150,20,juce::Justification::right);
+    g.drawText("v0.5.33    /    STREAM",744,24,150,20,juce::Justification::right);
 
     // Source cards
-    const juce::Rectangle<float> mixCard(44,72,360,104), refCard(536,72,380,104);
+    const juce::Rectangle<float> mixCard(44,64,360,104), refCard(536,64,380,104);
     panelCard(g,mixCard,cyan,!processor.isReferenceSelected());
     panelCard(g,refCard,violet,processor.isReferenceSelected());
     g.setColour(text);g.setFont(juce::Font(juce::FontOptions(13.f,juce::Font::bold)));
-    g.drawText("YOUR MIX",116,87,110,18,juce::Justification::left);
+    g.drawText("YOUR MIX",116,79,110,18,juce::Justification::left);
     g.setFont(juce::Font(juce::FontOptions(10.f)));g.setColour(muted);
-    g.drawText(juce::String(processor.getSourcePeakDb(),1)+" dB",116,108,85,16,juce::Justification::left);
-    g.drawText("Gain",116,131,42,18,juce::Justification::left);
+    g.drawText(juce::String(processor.getSourcePeakDb(),1)+" dB",116,100,85,16,juce::Justification::left);
+    g.drawText("Gain",116,123,42,18,juce::Justification::left);
 
     // Minimal live signal activity indicators. They are deliberately tiny: enough
     // to confirm that audio is present without turning the source cards into meters.
@@ -623,30 +659,31 @@ void RefMatchAudioProcessorEditor::paint(juce::Graphics& g)
             g.fillRoundedRectangle(x+i*3.3f,y+(11.0f-h)*0.5f,1.7f,h,0.85f);
         }
     };
-    drawSignalActivity(205.f,110.f,processor.getSourcePeakDb(),cyan);
+    drawSignalActivity(205.f,102.f,processor.getSourcePeakDb(),cyan);
 
     const auto media=processor.getLoop().getPosition();
     // Compact reference player layout: source badge, brighter artwork + metadata,
     // a tiny live activity indicator, then transport directly below the metadata.
-    const juce::Rectangle<float> cover(620,84,46,46);
-    if(media.artwork.isValid()) {
-        g.drawImageWithin(media.artwork,620,84,46,46,juce::RectanglePlacement::centred);
-        // Lift dark artwork slightly so it does not read as disabled/inactive.
-        g.setColour(juce::Colours::white.withAlpha(.055f));
-        g.fillRoundedRectangle(cover,4.5f);
+    const juce::Rectangle<float> cover(620,76,46,46);
+    if(media.artwork.isValid()) cachedArtwork=media.artwork;
+    if(cachedArtwork.isValid()) {
+        g.drawImageWithin(cachedArtwork,620,76,46,46,juce::RectanglePlacement::centred);
+        // Keep cover art at a constant visual level; never modulate it from audio activity.
+        g.setColour(juce::Colours::white.withAlpha(.025f));
+        g.drawRoundedRectangle(cover,4.5f,.8f);
     } else {
         g.setColour(line);g.fillRoundedRectangle(cover,5.f);
-        g.setColour(violet.withAlpha(.8f));g.fillEllipse(635,99,16,16);
+        g.setColour(violet.withAlpha(.8f));g.fillEllipse(635,91,16,16);
     }
 
     g.setColour(text);g.setFont(juce::Font(juce::FontOptions(11.5f,juce::Font::bold)));
-    g.drawText(media.title.isNotEmpty()?media.title:"REFERENCE",678,84,116,18,juce::Justification::left);
+    g.drawText(media.title.isNotEmpty()?media.title:"REFERENCE",678,76,116,18,juce::Justification::left);
     g.setFont(juce::Font(juce::FontOptions(9.8f)));g.setColour(text.withAlpha(.78f));
-    g.drawText(media.artist,678,103,116,16,juce::Justification::left);
+    g.drawText(media.artist,678,95,116,16,juce::Justification::left);
 
     // Keep the activity indicator, but integrate it into the metadata block
     // rather than leaving it floating above/beside the former waveform.
-    drawSignalActivity(796.f,105.f,processor.getReferencePeakDb(),violet);
+    drawSignalActivity(796.f,97.f,processor.getReferencePeakDb(),violet);
 
     if(page==1) {
         // Main graph card
@@ -744,17 +781,19 @@ void RefMatchAudioProcessorEditor::updateMatchHandle(float x)
 void RefMatchAudioProcessorEditor::resized()
 {
     // Top source cards
-    a.setBounds(58,86,48,42); b.setBounds(554,86,48,42); switchButton.setBounds(437,78,66,66); matchState.setBounds(292,82,96,24);
-    gain.setBounds(158,124,224,30);
+    a.setBounds(58,78,48,42); b.setBounds(554,78,48,42); switchButton.setBounds(437,70,66,66); matchState.setBounds(292,74,96,24);
+    gain.setBounds(158,116,224,30);
     // Reference transport now occupies the former waveform row, directly under
     // title/artist, so the card reads as one compact player block.
-    back.setBounds(678,126,42,28);
-    play.setBounds(726,126,34,28);
-    forward.setBounds(766,126,42,28);
+    back.setBounds(678,118,42,28);
+    play.setBounds(726,118,34,28);
+    forward.setBounds(766,118,42,28);
 
     // Main action row: all labels fit at the native 960 px width.
-    recordMix.setBounds(44,184,166,38); recordRef.setBounds(222,184,166,38); match.setBounds(400,184,174,38); reset.setBounds(586,184,104,38);
-    loopTab.setBounds(698,184,72,38); quickLoop.setBounds(774,184,82,38); eqOn.setBounds(860,184,82,38);
+    recordMix.setBounds(44,184,166,38); recordRef.setBounds(222,184,166,38); match.setBounds(400,184,174,38); reset.setBounds(586,184,page==2?92:104,38);
+    loopTab.setBounds(page==2?686:698,184,page==2?100:72,38);
+    quickLoop.setBounds(page==2?790:774,184,page==2?66:82,38);
+    eqOn.setBounds(860,184,82,38);
     mixProfile.setBounds(62,219,146,18); refProfile.setBounds(240,219,146,18);
     eqTab.setBounds(44,184,120,36);
 

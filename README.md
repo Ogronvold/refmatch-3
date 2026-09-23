@@ -1,4 +1,4 @@
-# RefMatch 0.5.32 — Live Reference Spectrum
+# RefMatch 0.5.33 — Live Reference Spectrum
 
 - B/reference now gets a live purple spectral metric during normal reference playback, not only during REF capture.
 - Selecting B starts the existing system-audio analysis capture when needed; reference audio remains analysis-only and is never routed through the plug-in output.
