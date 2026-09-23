@@ -144,6 +144,27 @@ void RefMatchLookAndFeel::drawButtonText(juce::Graphics& g,juce::TextButton& but
         g.drawText(button.getButtonText(),juce::Rectangle<float>(x+13.f,r.getY(),r.getRight()-(x+16.f),r.getHeight()),juce::Justification::centredLeft);
         return;
     }
+    if(bool(button.getProperties()["playerIcon"])) {
+        const auto r=button.getLocalBounds().toFloat();
+        const auto c=text.withAlpha(down?.70f:over?1.f:.94f);
+        const bool paused=button.getToggleState();
+        g.setColour(c);
+        if(paused) {
+            const float w=3.0f,h=12.0f,gap=3.5f;
+            const float cx=r.getCentreX(),cy=r.getCentreY();
+            g.fillRoundedRectangle(cx-gap-w,cy-h*.5f,w,h,1.1f);
+            g.fillRoundedRectangle(cx+gap,cy-h*.5f,w,h,1.1f);
+        } else {
+            const float cx=r.getCentreX()+1.f,cy=r.getCentreY();
+            juce::Path tri;
+            tri.startNewSubPath(cx-5.f,cy-7.f);
+            tri.lineTo(cx+7.f,cy);
+            tri.lineTo(cx-5.f,cy+7.f);
+            tri.closeSubPath();
+            g.fillPath(tri);
+        }
+        return;
+    }
     if(bool(button.getProperties()["recordIcon"])) {
         const auto r=button.getLocalBounds().toFloat();
         const bool on=button.getToggleState();
@@ -214,7 +235,12 @@ RefMatchAudioProcessorEditor::RefMatchAudioProcessorEditor(RefMatchAudioProcesso
         timerCallback();
     };
     back.onClick=[this]{processor.getLoop().skip(-5);};forward.onClick=[this]{processor.getLoop().skip(5);};
-    back.setTooltip("Back 5 seconds");forward.setTooltip("Forward 5 seconds");
+    back.setButtonText("-5 s");forward.setButtonText("+5 s");
+    // Keep the compact reference transport visually clean: no hover tooltip
+    // can cover the waveform/player card, and the play/pause glyph is drawn
+    // by the LookAndFeel rather than relying on a font glyph.
+    back.setTooltip({});forward.setTooltip({});play.setTooltip({});
+    play.getProperties().set("playerIcon",true);
     timeline.onRange=[this](double start,double end){
         inTime.setText(rangeText(start));outTime.setText(rangeText(end));
         if(processor.getLoop().setRange(start,end))processor.getLoop().enable(true);
@@ -407,8 +433,7 @@ void RefMatchAudioProcessorEditor::timerCallback()
     const auto p=processor.getLoop().getPosition();position.setText(p.valid?timeText(p.seconds)+"  /  "+timeText(p.duration):"Position unavailable",juce::dontSendNotification);
     const auto playback=processor.getMediaController().playbackState();
     play.setToggleState(playback==1,juce::dontSendNotification);
-    play.setButtonText(processor.isReferenceSelected() && playback==1?"❚❚":"▶");
-    play.setTooltip(processor.getMediaController().playbackPending()?"Command sent - waiting for player status":playback<0?"Player status unavailable; click to play":"Current player playback state");
+    play.setButtonText("");
     play.setEnabled(!processor.isTransportPending() && !processor.getMediaController().isBusy());
     back.setEnabled(p.valid);forward.setEnabled(p.valid);
     timeline.update(p.seconds,p.duration,processor.getLoop().getIn(),processor.getLoop().getOut(),processor.getLoop().isEnabled(),p.valid,p.track);
@@ -538,7 +563,7 @@ void RefMatchAudioProcessorEditor::paint(juce::Graphics& g)
     g.drawText("RefMatch",44,18,180,30,juce::Justification::left);
     g.setFont(juce::Font(juce::FontOptions(10.f)));g.setColour(muted);
     g.drawText("Match your sound.",44,48,180,16,juce::Justification::left);
-    g.drawText("v0.5.25    /    STREAM",744,24,150,20,juce::Justification::right);
+    g.drawText("v0.5.26    /    STREAM",744,24,150,20,juce::Justification::right);
 
     // Source cards
     const juce::Rectangle<float> mixCard(44,72,360,104), refCard(536,72,380,104);
@@ -580,7 +605,7 @@ void RefMatchAudioProcessorEditor::paint(juce::Graphics& g)
     // transport buttons so the two elements never overlap visually.
     g.setColour(violet.withAlpha(.18f));
     for(int i=0;i<29;++i){float h=2.f+6.f*std::abs(std::sin(i*.47f)+.35f*std::sin(i*1.37f));g.fillRoundedRectangle(680.f+i*2.5f,136.f-h*.5f,1.4f,h,.7f);}
-    drawSignalActivity(795.f,111.f,processor.getReferencePeakDb(),violet);
+    drawSignalActivity(607.f,111.f,processor.getReferencePeakDb(),violet);
 
     if(page==1) {
         // Main graph card
@@ -678,7 +703,7 @@ void RefMatchAudioProcessorEditor::resized()
     gain.setBounds(158,124,224,30);
     // Compact reference transport, visually grouped like the supplied reference:
     // -5 s, icon-only play/pause, +5 s. It sits to the right of the mini-waveform.
-    back.setBounds(770,124,48,30); play.setBounds(828,124,36,30); forward.setBounds(874,124,40,30);
+    back.setBounds(756,124,48,32); play.setBounds(814,124,40,32); forward.setBounds(864,124,48,32);
 
     // Main action row: all labels fit at the native 960 px width.
     recordMix.setBounds(44,184,166,38); recordRef.setBounds(222,184,166,38); match.setBounds(400,184,174,38); reset.setBounds(586,184,104,38);
